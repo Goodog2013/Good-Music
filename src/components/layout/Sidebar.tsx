@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { FolderPlus, Heart, House, LibraryBig, ListMusic, Settings2, Sparkles } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { useI18n } from '../../hooks/useI18n'
 import { usePlayerStore } from '../../store/playerStore'
 import { cn } from '../../utils/cn'
 
@@ -17,20 +18,22 @@ export const Sidebar = ({ onImport }: SidebarProps) => {
   const activePlaylistId = usePlayerStore((state) => state.activePlaylistId)
   const selectPlaylist = usePlayerStore((state) => state.selectPlaylist)
   const createPlaylist = usePlayerStore((state) => state.createPlaylist)
+  const { t } = useI18n()
+
   const [draft, setDraft] = useState('')
 
   const navItems = useMemo(
     () => [
       {
         id: 'home',
-        label: 'Library',
+        label: t('library'),
         counter: tracksCount,
         icon: House,
         onClick: () => setActiveView('home'),
       },
       {
         id: 'playlist',
-        label: 'Playlists',
+        label: t('playlists'),
         counter: playlists.length,
         icon: ListMusic,
         onClick: () => {
@@ -49,20 +52,20 @@ export const Sidebar = ({ onImport }: SidebarProps) => {
       },
       {
         id: 'favorites',
-        label: 'Favorites',
+        label: t('favorites'),
         counter: favoritesCount,
         icon: Heart,
         onClick: () => setActiveView('favorites'),
       },
       {
         id: 'settings',
-        label: 'Settings',
+        label: t('settings'),
         counter: null,
         icon: Settings2,
         onClick: () => setActiveView('settings'),
       },
     ],
-    [activePlaylistId, favoritesCount, playlists, selectPlaylist, setActiveView, tracksCount],
+    [activePlaylistId, favoritesCount, playlists, selectPlaylist, setActiveView, t, tracksCount],
   )
 
   const onCreate = () => {
@@ -80,10 +83,11 @@ export const Sidebar = ({ onImport }: SidebarProps) => {
         <button
           type="button"
           onClick={onImport}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-3 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+          className="btn-accent flex w-full items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition"
+          title={t('addLocalTracks')}
         >
           <FolderPlus size={16} />
-          Add Local Tracks
+          {t('addLocalTracks')}
         </button>
       </div>
 
@@ -97,6 +101,7 @@ export const Sidebar = ({ onImport }: SidebarProps) => {
               key={item.id}
               type="button"
               onClick={item.onClick}
+              title={item.label}
               className={cn(
                 'mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm transition',
                 isActive
@@ -118,7 +123,7 @@ export const Sidebar = ({ onImport }: SidebarProps) => {
 
       <div className="glass-panel flex min-h-0 flex-1 flex-col p-3">
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-300/80">Playlists</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-300/80">{t('playlists')}</p>
           <Sparkles size={14} className="text-fuchsia-200/75" />
         </div>
 
@@ -131,14 +136,15 @@ export const Sidebar = ({ onImport }: SidebarProps) => {
                 onCreate()
               }
             }}
-            placeholder="New playlist"
+            placeholder={t('newPlaylist')}
             className="w-full rounded-lg border border-white/15 bg-night-950/70 px-2.5 py-2 text-sm text-white placeholder:text-slate-400 focus:border-cyan-300/70 focus:outline-none"
           />
           <button
             type="button"
             onClick={onCreate}
-            className="rounded-lg border border-cyan-300/35 bg-cyan-300/15 px-2.5 text-cyan-100 transition hover:bg-cyan-300/25"
-            aria-label="Create playlist"
+            title={t('createPlaylist')}
+            className="btn-accent rounded-lg border px-2.5 transition"
+            aria-label={t('createPlaylist')}
           >
             <LibraryBig size={16} />
           </button>
@@ -154,6 +160,7 @@ export const Sidebar = ({ onImport }: SidebarProps) => {
                 whileHover={{ scale: 1.01 }}
                 type="button"
                 onClick={() => selectPlaylist(playlist.id)}
+                title={playlist.name}
                 className={cn(
                   'w-full rounded-xl border px-3 py-2 text-left transition',
                   isActive
@@ -162,7 +169,7 @@ export const Sidebar = ({ onImport }: SidebarProps) => {
                 )}
               >
                 <p className="truncate text-sm font-semibold">{playlist.name}</p>
-                <p className="mt-1 truncate text-xs text-slate-300/70">{playlist.trackIds.length} tracks</p>
+                <p className="mt-1 truncate text-xs text-slate-300/70">{playlist.trackIds.length} {t('tracks')}</p>
               </motion.button>
             )
           })}
@@ -171,4 +178,3 @@ export const Sidebar = ({ onImport }: SidebarProps) => {
     </aside>
   )
 }
-

@@ -8,6 +8,15 @@
   color-scheme: dark;
   font-family: 'Sora', 'Space Grotesk', sans-serif;
   background: #05070f;
+  --bg-layer-1: radial-gradient(1200px 680px at 15% 8%, rgba(172, 65, 255, 0.22), transparent 58%);
+  --bg-layer-2: radial-gradient(900px 520px at 92% 18%, rgba(22, 206, 255, 0.15), transparent 60%);
+  --bg-layer-3: radial-gradient(1200px 700px at 54% 118%, rgba(255, 70, 150, 0.16), transparent 58%);
+  --bg-base: linear-gradient(165deg, #060712 0%, #060816 44%, #090b1e 100%);
+  --panel-border: rgba(255, 255, 255, 0.14);
+  --panel-bg-1: rgba(16, 20, 40, 0.62);
+  --panel-bg-2: rgba(8, 11, 25, 0.62);
+  --accent-h: 193;
+  --accent-secondary-h: 292;
 }
 
 * {
@@ -17,13 +26,47 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background:
-    radial-gradient(1200px 680px at 15% 8%, rgba(172, 65, 255, 0.22), transparent 58%),
-    radial-gradient(900px 520px at 92% 18%, rgba(22, 206, 255, 0.15), transparent 60%),
-    radial-gradient(1200px 700px at 54% 118%, rgba(255, 70, 150, 0.16), transparent 58%),
-    linear-gradient(165deg, #060712 0%, #060816 44%, #090b1e 100%);
+  background: var(--bg-layer-1), var(--bg-layer-2), var(--bg-layer-3), var(--bg-base);
   color: #f5f8ff;
   overflow: hidden;
+}
+
+body[data-theme='graphite'] {
+  --bg-layer-1: radial-gradient(1200px 680px at 10% 5%, rgba(136, 149, 186, 0.18), transparent 58%);
+  --bg-layer-2: radial-gradient(950px 560px at 95% 12%, rgba(92, 183, 217, 0.12), transparent 62%);
+  --bg-layer-3: radial-gradient(1100px 680px at 52% 120%, rgba(112, 95, 139, 0.17), transparent 60%);
+  --bg-base: linear-gradient(162deg, #090b12 0%, #101522 42%, #1a1f32 100%);
+  --panel-bg-1: rgba(27, 32, 49, 0.66);
+  --panel-bg-2: rgba(15, 18, 30, 0.72);
+}
+
+body[data-theme='ocean'] {
+  --bg-layer-1: radial-gradient(1200px 680px at 12% 6%, rgba(10, 171, 255, 0.2), transparent 58%);
+  --bg-layer-2: radial-gradient(920px 540px at 94% 16%, rgba(54, 255, 209, 0.16), transparent 62%);
+  --bg-layer-3: radial-gradient(1200px 700px at 50% 118%, rgba(0, 102, 255, 0.16), transparent 58%);
+  --bg-base: linear-gradient(162deg, #061028 0%, #06172f 44%, #092444 100%);
+  --panel-bg-1: rgba(9, 34, 63, 0.66);
+  --panel-bg-2: rgba(7, 20, 39, 0.74);
+}
+
+body[data-accent='cyan'] {
+  --accent-h: 193;
+  --accent-secondary-h: 292;
+}
+
+body[data-accent='violet'] {
+  --accent-h: 273;
+  --accent-secondary-h: 203;
+}
+
+body[data-accent='rose'] {
+  --accent-h: 338;
+  --accent-secondary-h: 262;
+}
+
+body[data-accent='emerald'] {
+  --accent-h: 154;
+  --accent-secondary-h: 198;
 }
 
 body::before {
@@ -50,8 +93,8 @@ body::before {
 }
 
 .glass-panel {
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: linear-gradient(145deg, rgba(16, 20, 40, 0.62), rgba(8, 11, 25, 0.62));
+  border: 1px solid var(--panel-border);
+  background: linear-gradient(145deg, var(--panel-bg-1), var(--panel-bg-2));
   backdrop-filter: blur(24px);
   box-shadow: 0 16px 42px rgba(3, 6, 18, 0.5);
   border-radius: 18px;
@@ -71,7 +114,8 @@ body::before {
 }
 
 .titlebar-btn:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: hsl(var(--accent-h) 90% 62% / 0.2);
+  border-color: hsl(var(--accent-h) 95% 73% / 0.5);
 }
 
 .titlebar-close:hover {
@@ -85,7 +129,7 @@ body::before {
   width: 100%;
   height: 5px;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(56, 219, 255, 0.85), rgba(233, 97, 255, 0.82));
+  background: linear-gradient(90deg, hsl(var(--accent-h) 88% 62% / 0.9), hsl(var(--accent-secondary-h) 90% 65% / 0.84));
   outline: none;
 }
 
@@ -118,10 +162,30 @@ body::before {
 
 ::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(105, 204, 255, 0.45), rgba(241, 123, 255, 0.4));
+  background: linear-gradient(180deg, hsl(var(--accent-h) 90% 66% / 0.5), hsl(var(--accent-secondary-h) 88% 64% / 0.45));
 }
 
 ::-webkit-scrollbar-track {
   background: transparent;
+}
+
+.btn-accent {
+  border-color: hsl(var(--accent-h) 92% 72% / 0.45);
+  background: hsl(var(--accent-h) 90% 60% / 0.15);
+  color: hsl(var(--accent-h) 95% 92%);
+}
+
+.btn-accent:hover {
+  background: hsl(var(--accent-h) 90% 60% / 0.25);
+}
+
+.btn-accent-strong {
+  border-color: hsl(var(--accent-h) 92% 72% / 0.6);
+  background: hsl(var(--accent-h) 92% 58% / 0.22);
+  color: hsl(var(--accent-h) 95% 96%);
+}
+
+.btn-accent-strong:hover {
+  background: hsl(var(--accent-h) 92% 58% / 0.32);
 }
 

@@ -4,6 +4,14 @@ export type AppView = 'home' | 'playlist' | 'favorites' | 'settings'
 
 export type TrackSource = 'demo' | 'local'
 
+export type AppLanguage = 'ru' | 'en'
+
+export type AppTheme = 'midnight' | 'graphite' | 'ocean'
+
+export type AccentColor = 'cyan' | 'violet' | 'rose' | 'emerald'
+
+export type VisualizerMode = 'orbital' | 'rings' | 'wave'
+
 export interface Track {
   id: string
   title: string
@@ -30,5 +38,9 @@ export interface Playlist {
 export interface AppSettings {
   visualizerEnabled: boolean
   visualizerIntensity: number
+  visualizerMode: VisualizerMode
+  language: AppLanguage
+  theme: AppTheme
+  accent: AccentColor
 }
 

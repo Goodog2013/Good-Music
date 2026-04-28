@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { useMemo, useRef, type ChangeEvent } from 'react'
+import { useEffect, useMemo, useRef, type ChangeEvent } from 'react'
 import { ErrorBoundary } from '../components/common/ErrorBoundary'
 import { Sidebar } from '../components/layout/Sidebar'
 import { TitleBar } from '../components/layout/TitleBar'
@@ -21,6 +21,8 @@ export const App = () => {
   const setActiveView = usePlayerStore((state) => state.setActiveView)
   const playbackNotice = usePlayerStore((state) => state.playbackNotice)
   const dismissPlaybackNotice = usePlayerStore((state) => state.dismissPlaybackNotice)
+  const theme = usePlayerStore((state) => state.settings.theme)
+  const accent = usePlayerStore((state) => state.settings.accent)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const onImport = () => {
@@ -51,6 +53,14 @@ export const App = () => {
         return <HomeScreen onImport={onImport} />
     }
   }, [activeView])
+
+  useEffect(() => {
+    document.body.dataset.theme = theme
+  }, [theme])
+
+  useEffect(() => {
+    document.body.dataset.accent = accent
+  }, [accent])
 
   return (
     <ErrorBoundary

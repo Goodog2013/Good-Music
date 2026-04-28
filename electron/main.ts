@@ -1,11 +1,22 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { app, BrowserWindow, ipcMain } from 'electron'
+import * as electron from 'electron'
+
+type ElectronModule = typeof import('electron')
+const electronApi = electron as ElectronModule & { default?: Partial<ElectronModule> }
+
+const app = electronApi.app ?? electronApi.default?.app
+const BrowserWindow = electronApi.BrowserWindow ?? electronApi.default?.BrowserWindow
+const ipcMain = electronApi.ipcMain ?? electronApi.default?.ipcMain
+
+if (!app || !BrowserWindow || !ipcMain) {
+  throw new Error('Electron API is unavailable in main process.')
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-let mainWindow: BrowserWindow | null = null
+let mainWindow: InstanceType<typeof BrowserWindow> | null = null
 
 const sendWindowState = () => {
   if (!mainWindow) {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react'
+﻿import { useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react'
 import { MathUtils } from 'three'
 import { AudioAnalyserContext, EMPTY_FRAME } from '../../hooks/useAudioAnalyser'
 import { usePlayerStore } from '../../store/playerStore'
@@ -120,7 +120,7 @@ export const AudioEngineProvider = ({ children }: PropsWithChildren) => {
         usePlayerStore.setState({ isPlaying: false })
 
         if (currentTrack?.isMissing) {
-          setPlaybackNotice('Источник локального трека недоступен. Импортируйте файл снова.')
+          setPlaybackNotice('Local source for this track is unavailable. Re-import the file.')
         }
         return
       }
@@ -145,7 +145,7 @@ export const AudioEngineProvider = ({ children }: PropsWithChildren) => {
             await audio.play()
             await rampVolume(audio, 0.03, volume, 190)
           } catch {
-            setPlaybackNotice('Не удалось запустить воспроизведение. Нажмите Play ещё раз.')
+            setPlaybackNotice('Could not start playback. Press Play again.')
           }
         }
       }
@@ -172,7 +172,7 @@ export const AudioEngineProvider = ({ children }: PropsWithChildren) => {
           setPlaybackNotice(null)
         } catch {
           usePlayerStore.setState({ isPlaying: false })
-          setPlaybackNotice('Автовоспроизведение заблокировано, нажмите Play вручную.')
+          setPlaybackNotice('Autoplay was blocked. Press Play manually.')
         }
       } else {
         audio.pause()

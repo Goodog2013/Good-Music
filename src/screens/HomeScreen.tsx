@@ -1,15 +1,18 @@
-import { motion } from 'framer-motion'
-import { AudioLines, Heart, Music2, PlayCircle, UploadCloud } from 'lucide-react'
-import { useMemo } from 'react'
+﻿import { motion } from 'framer-motion'
+import { AudioLines, Heart, PlayCircle, Plus, UploadCloud } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { ErrorBoundary } from '../components/common/ErrorBoundary'
 import { GlassCard } from '../components/common/GlassCard'
 import { VisualizerCanvas } from '../components/visualizer/VisualizerCanvas'
+import { useI18n } from '../hooks/useI18n'
 import { usePlayerStore } from '../store/playerStore'
 import { formatTime } from '../utils/time'
 
 interface HomeScreenProps {
   onImport: () => void
 }
+
+const PAGE_SIZE = 8
 
 export const HomeScreen = ({ onImport }: HomeScreenProps) => {
   const tracks = usePlayerStore((state) => state.tracks)
@@ -20,6 +23,11 @@ export const HomeScreen = ({ onImport }: HomeScreenProps) => {
   const toggleFavorite = usePlayerStore((state) => state.toggleFavorite)
   const activePlaylistId = usePlayerStore((state) => state.activePlaylistId)
   const playlists = usePlayerStore((state) => state.playlists)
+  const addTrackToPlaylist = usePlayerStore((state) => state.addTrackToPlaylist)
+  const setPlaybackNotice = usePlayerStore((state) => state.setPlaybackNotice)
+  const { t } = useI18n()
+
+  const [page, setPage] = useState(1)
 
   const filtered = useMemo(() => {
     const normalized = searchQuery.trim().toLowerCase()
@@ -40,8 +48,11 @@ export const HomeScreen = ({ onImport }: HomeScreenProps) => {
       })
   }, [searchQuery, tracks])
 
-  const recentTracks = filtered.slice(0, 10)
-  const queueIds = recentTracks.map((track) => track.id)
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const visiblePage = Math.min(page, totalPages)
+  const offset = (visiblePage - 1) * PAGE_SIZE
+  const recentTracks = filtered.slice(offset, offset + PAGE_SIZE)
+  const queueIds = filtered.map((track) => track.id)
 
   const currentTrack = useMemo(
     () => tracks.find((track) => track.id === currentTrackId) ?? null,
@@ -49,6 +60,23 @@ export const HomeScreen = ({ onImport }: HomeScreenProps) => {
   )
 
   const activePlaylist = playlists.find((playlist) => playlist.id === activePlaylistId)
+
+  const onAddToPlaylist = (trackId: string) => {
+    const playlist = playlists.find((item) => item.id === activePlaylistId) ?? playlists[0]
+
+    if (!playlist) {
+      setPlaybackNotice(t('noPlaylistToAdd'))
+      return
+    }
+
+    if (playlist.trackIds.includes(trackId)) {
+      setPlaybackNotice(`${t('alreadyInPlaylist')}: ${playlist.name}`)
+      return
+    }
+
+    addTrackToPlaylist(trackId, playlist.id)
+    setPlaybackNotice(`${t('addedToPlaylist')}: ${playlist.name}`)
+  }
 
   return (
     <motion.section
@@ -75,19 +103,19 @@ export const HomeScreen = ({ onImport }: HomeScreenProps) => {
         <div className="space-y-4">
           <GlassCard>
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-xs uppercase tracking-[0.23em] text-cyan-100/75">Now Playing</p>
+              <p className="text-xs uppercase tracking-[0.23em] text-cyan-100/75">{t('nowPlaying')}</p>
               <AudioLines size={16} className="text-cyan-100/70" />
             </div>
-            <p className="truncate text-xl font-semibold text-white">{currentTrack?.title ?? 'Выберите трек'}</p>
-            <p className="mt-1 truncate text-sm text-slate-300/80">{currentTrack?.artist ?? 'Локальная библиотека'}</p>
+            <p className="truncate text-xl font-semibold text-white">{currentTrack?.title ?? t('chooseTrack')}</p>
+            <p className="mt-1 truncate text-sm text-slate-300/80">{currentTrack?.artist ?? t('localLibrary')}</p>
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-slate-200/80">
               <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-                <p className="uppercase tracking-wider text-slate-400">Duration</p>
+                <p className="uppercase tracking-wider text-slate-400">{t('duration')}</p>
                 <p className="mt-1 text-sm text-white">{formatTime(currentTrack?.duration ?? 0)}</p>
               </div>
               <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-                <p className="uppercase tracking-wider text-slate-400">Playlist</p>
-                <p className="mt-1 truncate text-sm text-white">{activePlaylist?.name ?? 'Library queue'}</p>
+                <p className="uppercase tracking-wider text-slate-400">{t('playlist')}</p>
+                <p className="mt-1 truncate text-sm text-white">{activePlaylist?.name ?? t('libraryQueue')}</p>
               </div>
             </div>
           </GlassCard>
@@ -96,24 +124,52 @@ export const HomeScreen = ({ onImport }: HomeScreenProps) => {
             <button
               type="button"
               onClick={onImport}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-fuchsia-300/40 bg-fuchsia-300/15 px-3 py-3 text-sm font-semibold text-fuchsia-100 transition hover:bg-fuchsia-300/25"
+              className="btn-accent flex w-full items-center justify-center gap-2 rounded-xl border px-3 py-3 text-sm font-semibold transition"
+              title={t('addLocalTracks')}
             >
               <UploadCloud size={17} />
-              Добавить локальные треки
+              {t('addLocalTracks')}
             </button>
           </GlassCard>
         </div>
       </div>
 
       <GlassCard className="min-h-[220px] p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="text-xs uppercase tracking-[0.23em] text-slate-300/80">Recent / Popular</p>
-          <span className="rounded-md border border-white/15 px-2 py-1 text-xs text-slate-200/80">{recentTracks.length} tracks</span>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs uppercase tracking-[0.23em] text-slate-300/80">{t('recentPopular')}</p>
+          <div className="flex items-center gap-2">
+            <span className="rounded-md border border-white/15 px-2 py-1 text-xs text-slate-200/80">
+              {filtered.length} {t('tracks')}
+            </span>
+            <div className="flex items-center gap-1 rounded-lg border border-white/15 bg-white/5 p-1">
+              <button
+                type="button"
+                onClick={() => setPage((value) => Math.max(1, value - 1))}
+                disabled={visiblePage <= 1}
+                title={t('prevPage')}
+                className="rounded-md border border-white/10 px-2 py-1 text-xs text-slate-200 transition disabled:opacity-45"
+              >
+                {t('prevPage')}
+              </button>
+              <span className="px-1.5 text-xs text-slate-300/85">
+                {t('page')} {visiblePage}/{totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
+                disabled={visiblePage >= totalPages}
+                title={t('nextPage')}
+                className="rounded-md border border-white/10 px-2 py-1 text-xs text-slate-200 transition disabled:opacity-45"
+              >
+                {t('nextPage')}
+              </button>
+            </div>
+          </div>
         </div>
 
         {recentTracks.length === 0 ? (
           <p className="rounded-xl border border-dashed border-white/20 bg-white/5 p-6 text-center text-sm text-slate-300/70">
-            В библиотеке пока нет подходящих треков. Импортируйте `mp3`, `wav` или `ogg`.
+            {t('noTracksFound')}
           </p>
         ) : (
           <div className="space-y-2">
@@ -128,28 +184,55 @@ export const HomeScreen = ({ onImport }: HomeScreenProps) => {
                   transition={{ delay: index * 0.03 }}
                   className="group flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2.5 transition hover:border-cyan-300/40 hover:bg-white/5"
                 >
-                  <div className="h-10 w-10 rounded-lg border border-white/10" style={{ background: track.artwork }} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-white">{track.title}</p>
-                    <p className="truncate text-xs text-slate-300/75">{track.artist}</p>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => playTrack(track.id, queueIds)}
+                    title={t('play')}
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  >
+                    <div
+                      className="h-10 w-10 rounded-lg border border-white/10 bg-cover bg-center"
+                      style={{
+                        backgroundImage: track.artwork.startsWith('data:') ? `url(${track.artwork})` : undefined,
+                        background: track.artwork.startsWith('data:') ? undefined : track.artwork,
+                      }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-white">{track.title}</p>
+                      <p className="truncate text-xs text-slate-300/75">{track.artist}</p>
+                    </div>
+                  </button>
+
                   <p className="text-xs text-slate-300/70">{formatTime(track.duration)}</p>
-                  {track.isMissing ? <p className="text-[11px] text-amber-200/80">reimport</p> : null}
+                  {track.isMissing ? <p className="text-[11px] text-amber-200/80">{t('reimport')}</p> : null}
+
+                  <button
+                    type="button"
+                    onClick={() => onAddToPlaylist(track.id)}
+                    title={t('addToPlaylistHint')}
+                    className="rounded-lg border border-white/15 px-2 py-1 text-xs text-slate-200 transition hover:border-cyan-300/45 hover:text-cyan-100"
+                  >
+                    <Plus size={14} />
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => toggleFavorite(track.id)}
+                    title={t('playerFavorite')}
                     className={`rounded-lg border px-2 py-1 text-xs transition ${isFavorite ? 'border-rose-300/65 bg-rose-300/20 text-rose-100' : 'border-white/15 text-slate-200 hover:border-rose-300/45 hover:text-rose-100'}`}
                   >
                     <Heart size={14} fill={isFavorite ? 'currentColor' : 'none'} />
                   </button>
+
                   <button
                     type="button"
                     onClick={() => playTrack(track.id, queueIds)}
-                    className="rounded-lg border border-cyan-300/45 bg-cyan-300/15 px-2.5 py-1 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/25"
+                    title={t('play')}
+                    className="btn-accent rounded-lg border px-2.5 py-1 text-xs font-semibold transition"
                   >
                     <span className="inline-flex items-center gap-1">
                       <PlayCircle size={14} />
-                      Play
+                      {t('play')}
                     </span>
                   </button>
                 </motion.div>
@@ -158,14 +241,6 @@ export const HomeScreen = ({ onImport }: HomeScreenProps) => {
           </div>
         )}
       </GlassCard>
-
-      <GlassCard>
-        <div className="flex items-center justify-between text-sm">
-          <p className="text-slate-300/80">Desktop mode активен: custom title bar и native window controls подключены.</p>
-          <Music2 size={16} className="text-cyan-200/70" />
-        </div>
-      </GlassCard>
     </motion.section>
   )
 }
-

@@ -95,6 +95,10 @@ export const getDemoPlaylists = (): Playlist[] => [
 export const defaultSettings: AppSettings = {
   visualizerEnabled: false,
   visualizerIntensity: 72,
+  visualizerMode: 'orbital',
+  language: 'ru',
+  theme: 'midnight',
+  accent: 'cyan',
 }
 
 export const hydrateTrack = (track: Track): Track => {

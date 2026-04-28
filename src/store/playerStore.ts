@@ -2,10 +2,10 @@ import { create } from 'zustand'
 import { shallow } from 'zustand/shallow'
 import { subscribeWithSelector } from 'zustand/middleware'
 import { defaultSettings, getDemoPlaylists, getDemoTracks, hydrateTrack } from '../data/demoLibrary'
-import { readAudioDuration } from '../utils/audio'
+import { readAudioDuration, readAudioTagInfo } from '../utils/audio'
 import { makeId, parseArtistAndTitle, pickArtworkGradient, isSupportedAudioFile } from '../utils/track'
 import { clamp } from '../utils/time'
-import type { AppSettings, AppView, Playlist, RepeatMode, Track } from '../types/music'
+import type { AccentColor, AppLanguage, AppSettings, AppTheme, AppView, Playlist, RepeatMode, Track, VisualizerMode } from '../types/music'
 
 const STORAGE_KEY = 'goodogs-music-library-v1'
 
@@ -60,6 +60,10 @@ interface PlayerStore {
   addLocalTracks: (files: File[]) => Promise<{ added: number; skipped: number }>
   setVisualizerEnabled: (enabled: boolean) => void
   setVisualizerIntensity: (intensity: number) => void
+  setVisualizerMode: (mode: VisualizerMode) => void
+  setLanguage: (language: AppLanguage) => void
+  setTheme: (theme: AppTheme) => void
+  setAccent: (accent: AccentColor) => void
   clearLibrary: () => void
 }
 
@@ -68,6 +72,34 @@ const ensureUnique = (ids: string[]) => Array.from(new Set(ids))
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 
 const safeNumber = (value: unknown, fallback = 0) => (typeof value === 'number' && Number.isFinite(value) ? value : fallback)
+
+const parseVisualizerMode = (value: unknown): VisualizerMode => {
+  if (value === 'orbital' || value === 'rings' || value === 'wave') {
+    return value
+  }
+  return defaultSettings.visualizerMode
+}
+
+const parseLanguage = (value: unknown): AppLanguage => {
+  if (value === 'ru' || value === 'en') {
+    return value
+  }
+  return defaultSettings.language
+}
+
+const parseTheme = (value: unknown): AppTheme => {
+  if (value === 'midnight' || value === 'graphite' || value === 'ocean') {
+    return value
+  }
+  return defaultSettings.theme
+}
+
+const parseAccent = (value: unknown): AccentColor => {
+  if (value === 'cyan' || value === 'violet' || value === 'rose' || value === 'emerald') {
+    return value
+  }
+  return defaultSettings.accent
+}
 
 const sanitizeTrack = (value: unknown): Track | null => {
   if (!isRecord(value)) {
@@ -160,6 +192,10 @@ const loadPersistedSnapshot = (): PersistedSnapshot | null => {
           ? parsedSettings.visualizerEnabled
           : defaultSettings.visualizerEnabled,
       visualizerIntensity: clamp(safeNumber(parsedSettings.visualizerIntensity, defaultSettings.visualizerIntensity), 20, 100),
+      visualizerMode: parseVisualizerMode(parsedSettings.visualizerMode),
+      language: parseLanguage(parsedSettings.language),
+      theme: parseTheme(parsedSettings.theme),
+      accent: parseAccent(parsedSettings.accent),
     }
 
     return {
@@ -223,6 +259,10 @@ const hydrateInitialState = () => {
       ...defaultSettings,
       ...persisted.settings,
       visualizerEnabled: false,
+      visualizerMode: parseVisualizerMode(persisted.settings.visualizerMode),
+      language: parseLanguage(persisted.settings.language),
+      theme: parseTheme(persisted.settings.theme),
+      accent: parseAccent(persisted.settings.accent),
     },
   }
 }
@@ -568,18 +608,18 @@ export const usePlayerStore = create<PlayerStore>()(
             return null
           }
 
-          const duration = await readAudioDuration(file)
-          const { artist, title } = parseArtistAndTitle(file.name)
+          const [duration, tags] = await Promise.all([readAudioDuration(file), readAudioTagInfo(file)])
+          const parsedFromName = parseArtistAndTitle(file.name)
           const hue = file.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 360
 
           const nextTrack: Track = {
             id: makeId('track'),
-            title,
-            artist,
+            title: tags.title?.trim() || parsedFromName.title,
+            artist: tags.artist?.trim() || parsedFromName.artist,
             duration,
             source: 'local',
             url: URL.createObjectURL(file),
-            artwork: pickArtworkGradient(hue),
+            artwork: tags.artwork || pickArtworkGradient(hue),
             hue,
             fileName: file.name,
             isMissing: false,
@@ -626,6 +666,38 @@ export const usePlayerStore = create<PlayerStore>()(
         },
       }))
     },
+    setVisualizerMode: (mode) => {
+      set((state) => ({
+        settings: {
+          ...state.settings,
+          visualizerMode: mode,
+        },
+      }))
+    },
+    setLanguage: (language) => {
+      set((state) => ({
+        settings: {
+          ...state.settings,
+          language,
+        },
+      }))
+    },
+    setTheme: (theme) => {
+      set((state) => ({
+        settings: {
+          ...state.settings,
+          theme,
+        },
+      }))
+    },
+    setAccent: (accent) => {
+      set((state) => ({
+        settings: {
+          ...state.settings,
+          accent,
+        },
+      }))
+    },
     clearLibrary: () => {
       const demoTracks = getDemoTracks()
       const demoPlaylists = getDemoPlaylists()
@@ -666,7 +738,11 @@ if (typeof window !== 'undefined') {
       const persistable: PersistedSnapshot = {
         tracks: snapshot.tracks.map((track) => ({
           ...track,
-          url: track.source === 'demo' ? '' : '',
+          url: '',
+          artwork:
+            track.source === 'local' && track.artwork.startsWith('data:')
+              ? pickArtworkGradient(track.hue)
+              : track.artwork,
           isMissing: track.source === 'local' ? true : false,
         })),
         playlists: snapshot.playlists,

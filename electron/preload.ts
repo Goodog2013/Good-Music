@@ -1,4 +1,14 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import * as electron from 'electron'
+
+type ElectronModule = typeof import('electron')
+const electronApi = electron as ElectronModule & { default?: Partial<ElectronModule> }
+
+const contextBridge = electronApi.contextBridge ?? electronApi.default?.contextBridge
+const ipcRenderer = electronApi.ipcRenderer ?? electronApi.default?.ipcRenderer
+
+if (!contextBridge || !ipcRenderer) {
+  throw new Error('Electron preload bridge is unavailable.')
+}
 
 contextBridge.exposeInMainWorld('electronWindow', {
   minimize: () => ipcRenderer.invoke('window:minimize'),
