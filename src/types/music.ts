@@ -18,6 +18,7 @@ export interface Track {
   artist: string
   duration: number
   url: string
+  filePath?: string
   source: TrackSource
   artwork: string
   hue: number
@@ -42,5 +43,13 @@ export interface AppSettings {
   language: AppLanguage
   theme: AppTheme
   accent: AccentColor
+}
+
+export interface PersistedLibrarySnapshot {
+  tracks: Track[]
+  playlists: Playlist[]
+  favoriteTrackIds: string[]
+  activePlaylistId: string | null
+  settings: AppSettings
 }
 

@@ -22,6 +22,12 @@ export interface AudioTagInfo {
   artwork?: string
 }
 
+export const toFileUrl = (filePath: string) => {
+  const normalized = filePath.replace(/\\/g, '/')
+  const prefixed = normalized.startsWith('/') ? `file://${normalized}` : `file:///${normalized}`
+  return encodeURI(prefixed)
+}
+
 const toDataUrl = (data: number[], format: string) => {
   const bytes = new Uint8Array(data)
   let binary = ''

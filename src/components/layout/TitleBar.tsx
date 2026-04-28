@@ -12,7 +12,6 @@ export const TitleBar = ({ onImport }: TitleBarProps) => {
   const activeView = usePlayerStore((state) => state.activeView)
   const searchQuery = usePlayerStore((state) => state.searchQuery)
   const setSearchQuery = usePlayerStore((state) => state.setSearchQuery)
-  const setPlaybackNotice = usePlayerStore((state) => state.setPlaybackNotice)
   const { t } = useI18n()
 
   const [isMaximized, setIsMaximized] = useState(false)
@@ -73,7 +72,6 @@ export const TitleBar = ({ onImport }: TitleBarProps) => {
 
   const onMinimize = async () => {
     if (!window.electronWindow) {
-      setPlaybackNotice(t('windowControlsUnavailable'))
       return
     }
 
@@ -82,7 +80,6 @@ export const TitleBar = ({ onImport }: TitleBarProps) => {
 
   const onToggleMaximize = async () => {
     if (!window.electronWindow) {
-      setPlaybackNotice(t('windowControlsUnavailable'))
       return
     }
 
@@ -92,7 +89,6 @@ export const TitleBar = ({ onImport }: TitleBarProps) => {
 
   const onClose = async () => {
     if (!window.electronWindow) {
-      setPlaybackNotice(t('windowControlsUnavailable'))
       return
     }
 

@@ -1,22 +1,20 @@
-import fs from 'node:fs'
+﻿import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import * as electron from 'electron'
-
-type ElectronModule = typeof import('electron')
-const electronApi = electron as ElectronModule & { default?: Partial<ElectronModule> }
-
-const app = electronApi.app ?? electronApi.default?.app
-const BrowserWindow = electronApi.BrowserWindow ?? electronApi.default?.BrowserWindow
-const ipcMain = electronApi.ipcMain ?? electronApi.default?.ipcMain
-
-if (!app || !BrowserWindow || !ipcMain) {
-  throw new Error('Electron API is unavailable in main process.')
-}
+import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const projectRoot = process.cwd()
+const configPath = path.join(projectRoot, '.gmcfg')
+const tracksDir = path.join(projectRoot, 'tracks')
 
-let mainWindow: InstanceType<typeof BrowserWindow> | null = null
+let mainWindow: BrowserWindow | null = null
+
+const ensureProjectDirs = () => {
+  fs.mkdirSync(tracksDir, { recursive: true })
+}
+
+const safeFileName = (name: string) => name.replace(/[^a-zA-Z0-9._-]/g, '_')
 
 const sendWindowState = () => {
   if (!mainWindow) {
@@ -62,9 +60,11 @@ const createWindow = () => {
 }
 
 app.whenReady().then(() => {
+  ensureProjectDirs()
+
   ipcMain.on('renderer:log-error', (_event, message: string) => {
     try {
-      const logFile = path.join(app.getPath('userData'), 'renderer-errors.log')
+      const logFile = path.join(projectRoot, 'renderer-errors.log')
       const line = `[${new Date().toISOString()}] ${message}\n`
       fs.appendFileSync(logFile, line, 'utf8')
     } catch {
@@ -102,6 +102,75 @@ app.whenReady().then(() => {
     mainWindow?.close()
   })
 
+  ipcMain.handle('library:ingest-files', (_event, sourcePaths: string[]) => {
+    ensureProjectDirs()
+
+    const imported = sourcePaths
+      .filter((sourcePath) => typeof sourcePath === 'string' && sourcePath.length > 0 && fs.existsSync(sourcePath))
+      .map((sourcePath) => {
+        const ext = path.extname(sourcePath)
+        const base = safeFileName(path.basename(sourcePath, ext))
+        const fileName = `${Date.now()}_${Math.random().toString(16).slice(2, 8)}_${base}${ext}`
+        const destinationPath = path.join(tracksDir, fileName)
+
+        fs.copyFileSync(sourcePath, destinationPath)
+
+        return {
+          sourcePath,
+          destinationPath,
+          fileName,
+        }
+      })
+
+    return imported
+  })
+
+  ipcMain.handle('library:load-config', () => {
+    if (!fs.existsSync(configPath)) {
+      return null
+    }
+
+    return fs.readFileSync(configPath, 'utf8')
+  })
+
+  ipcMain.handle('library:save-config', (_event, payload: string) => {
+    fs.writeFileSync(configPath, payload, 'utf8')
+  })
+
+  ipcMain.handle('library:import-config', async () => {
+    const result = await dialog.showOpenDialog({
+      title: 'Import .gmcfg',
+      filters: [{ name: 'Good Music Config', extensions: ['gmcfg', 'json'] }],
+      properties: ['openFile'],
+    })
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return null
+    }
+
+    const targetPath = result.filePaths[0]
+    if (!targetPath || !fs.existsSync(targetPath)) {
+      return null
+    }
+
+    return fs.readFileSync(targetPath, 'utf8')
+  })
+
+  ipcMain.handle('library:export-config', async (_event, payload: string) => {
+    const result = await dialog.showSaveDialog({
+      title: 'Export .gmcfg',
+      defaultPath: path.join(projectRoot, 'good-music.gmcfg'),
+      filters: [{ name: 'Good Music Config', extensions: ['gmcfg'] }],
+    })
+
+    if (result.canceled || !result.filePath) {
+      return false
+    }
+
+    fs.writeFileSync(result.filePath, payload, 'utf8')
+    return true
+  })
+
   createWindow()
 
   app.on('activate', () => {
@@ -116,4 +185,3 @@ app.on('window-all-closed', () => {
     app.quit()
   }
 })
-

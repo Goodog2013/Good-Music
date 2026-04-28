@@ -18,6 +18,8 @@ export const SettingsScreen = () => {
   const setLanguage = usePlayerStore((state) => state.setLanguage)
   const setTheme = usePlayerStore((state) => state.setTheme)
   const setAccent = usePlayerStore((state) => state.setAccent)
+  const importConfig = usePlayerStore((state) => state.importConfig)
+  const exportConfig = usePlayerStore((state) => state.exportConfig)
   const clearLibrary = usePlayerStore((state) => state.clearLibrary)
   const { t } = useI18n()
 
@@ -158,6 +160,25 @@ export const SettingsScreen = () => {
             </div>
 
             <p className="text-sm text-slate-300/80">{t('clearDesc')}</p>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void importConfig()}
+                className="btn-accent rounded-xl border px-3 py-2 text-sm font-semibold transition"
+                title={t('importConfig')}
+              >
+                {t('importConfig')}
+              </button>
+              <button
+                type="button"
+                onClick={() => void exportConfig()}
+                className="btn-accent rounded-xl border px-3 py-2 text-sm font-semibold transition"
+                title={t('exportConfig')}
+              >
+                {t('exportConfig')}
+              </button>
+            </div>
 
             <button
               type="button"

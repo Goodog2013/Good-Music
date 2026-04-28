@@ -1,4 +1,5 @@
 import { createToneWav } from '../utils/demoAudio'
+import { toFileUrl } from '../utils/audio'
 import { pickArtworkGradient } from '../utils/track'
 import type { AppSettings, Playlist, Track } from '../types/music'
 
@@ -124,8 +125,8 @@ export const hydrateTrack = (track: Track): Track => {
 
   return {
     ...track,
-    url: track.url,
-    isMissing: !track.url,
+    url: track.filePath ? toFileUrl(track.filePath) : track.url,
+    isMissing: !track.filePath && !track.url,
   }
 }
 

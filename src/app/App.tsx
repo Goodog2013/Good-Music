@@ -9,11 +9,10 @@ import { FavoritesScreen } from '../screens/FavoritesScreen'
 import { HomeScreen } from '../screens/HomeScreen'
 import { PlaylistScreen } from '../screens/PlaylistScreen'
 import { SettingsScreen } from '../screens/SettingsScreen'
-import { usePlayerStore } from '../store/playerStore'
+import { parseSnapshotText, usePlayerStore } from '../store/playerStore'
 import type { AppView } from '../types/music'
 
 const viewOrder: AppView[] = ['home', 'playlist', 'favorites', 'settings']
-const STORAGE_KEY = 'goodogs-music-library-v1'
 
 export const App = () => {
   const activeView = usePlayerStore((state) => state.activeView)
@@ -21,6 +20,9 @@ export const App = () => {
   const setActiveView = usePlayerStore((state) => state.setActiveView)
   const playbackNotice = usePlayerStore((state) => state.playbackNotice)
   const dismissPlaybackNotice = usePlayerStore((state) => state.dismissPlaybackNotice)
+  const clearLibrary = usePlayerStore((state) => state.clearLibrary)
+  const loadSnapshot = usePlayerStore((state) => state.loadSnapshot)
+  const saveProjectConfig = usePlayerStore((state) => state.saveProjectConfig)
   const theme = usePlayerStore((state) => state.settings.theme)
   const accent = usePlayerStore((state) => state.settings.accent)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -62,6 +64,52 @@ export const App = () => {
     document.body.dataset.accent = accent
   }, [accent])
 
+  useEffect(() => {
+    const loadConfig = async () => {
+      if (!window.electronWindow?.loadConfigFile) {
+        return
+      }
+
+      const raw = await window.electronWindow.loadConfigFile()
+      if (!raw) {
+        await saveProjectConfig()
+        return
+      }
+
+      const snapshot = parseSnapshotText(raw)
+      if (!snapshot) {
+        return
+      }
+
+      loadSnapshot(snapshot)
+    }
+
+    loadConfig()
+  }, [loadSnapshot, saveProjectConfig])
+
+  useEffect(() => {
+    if (!window.electronWindow?.saveConfigFile) {
+      return
+    }
+
+    let timeout: ReturnType<typeof setTimeout> | null = null
+    const unsubscribe = usePlayerStore.subscribe(() => {
+      if (timeout) {
+        clearTimeout(timeout)
+      }
+      timeout = setTimeout(() => {
+        void usePlayerStore.getState().saveProjectConfig()
+      }, 200)
+    })
+
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout)
+      }
+      unsubscribe()
+    }
+  }, [])
+
   return (
     <ErrorBoundary
       fallback={(error) => (
@@ -80,8 +128,9 @@ export const App = () => {
             ) : null}
             <button
               type="button"
-              onClick={() => {
-                localStorage.removeItem(STORAGE_KEY)
+              onClick={async () => {
+                clearLibrary()
+                await usePlayerStore.getState().saveProjectConfig()
                 window.location.reload()
               }}
               className="mt-4 rounded-xl border border-cyan-300/45 bg-cyan-300/15 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/25"

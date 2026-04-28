@@ -1,13 +1,9 @@
-import * as electron from 'electron'
+﻿import { contextBridge, ipcRenderer } from 'electron'
 
-type ElectronModule = typeof import('electron')
-const electronApi = electron as ElectronModule & { default?: Partial<ElectronModule> }
-
-const contextBridge = electronApi.contextBridge ?? electronApi.default?.contextBridge
-const ipcRenderer = electronApi.ipcRenderer ?? electronApi.default?.ipcRenderer
-
-if (!contextBridge || !ipcRenderer) {
-  throw new Error('Electron preload bridge is unavailable.')
+interface IngestedAudioFile {
+  sourcePath: string
+  destinationPath: string
+  fileName: string
 }
 
 contextBridge.exposeInMainWorld('electronWindow', {
@@ -29,5 +25,9 @@ contextBridge.exposeInMainWorld('electronWindow', {
       ipcRenderer.removeListener('window:maximized-changed', handler)
     }
   },
+  ingestAudioFiles: (paths: string[]) => ipcRenderer.invoke('library:ingest-files', paths) as Promise<IngestedAudioFile[]>,
+  loadConfigFile: () => ipcRenderer.invoke('library:load-config') as Promise<string | null>,
+  saveConfigFile: (payload: string) => ipcRenderer.invoke('library:save-config', payload) as Promise<void>,
+  importConfigFile: () => ipcRenderer.invoke('library:import-config') as Promise<string | null>,
+  exportConfigFile: (payload: string) => ipcRenderer.invoke('library:export-config', payload) as Promise<boolean>,
 })
-

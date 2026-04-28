@@ -16,6 +16,7 @@ export const FavoritesScreen = () => {
   const activePlaylistId = usePlayerStore((state) => state.activePlaylistId)
   const playlists = usePlayerStore((state) => state.playlists)
   const setPlaybackNotice = usePlayerStore((state) => state.setPlaybackNotice)
+  const setActiveView = usePlayerStore((state) => state.setActiveView)
   const searchQuery = usePlayerStore((state) => state.searchQuery)
   const { t } = useI18n()
 
@@ -35,11 +36,31 @@ export const FavoritesScreen = () => {
   }, [favoriteTrackIds, searchQuery, tracks])
 
   const onAddToPlaylist = (trackId: string) => {
-    const playlist = playlists.find((item) => item.id === activePlaylistId) ?? playlists[0]
-
-    if (!playlist) {
+    if (playlists.length === 0) {
       setPlaybackNotice(t('noPlaylistToAdd'))
+      setActiveView('playlist')
       return
+    }
+
+    let playlist = playlists.find((item) => item.id === activePlaylistId) ?? playlists[0]
+
+    if (playlists.length > 1) {
+      const menu = playlists.map((item, index) => `${index + 1}. ${item.name}`).join('\n')
+      const rawChoice = window.prompt(`${t('addToPlaylistHint')}:\n${menu}`)
+
+      if (!rawChoice) {
+        return
+      }
+
+      const byIndex = Number.parseInt(rawChoice, 10)
+      if (Number.isFinite(byIndex) && byIndex >= 1 && byIndex <= playlists.length) {
+        playlist = playlists[byIndex - 1]
+      } else {
+        const byName = playlists.find((item) => item.name.toLowerCase() === rawChoice.toLowerCase())
+        if (byName) {
+          playlist = byName
+        }
+      }
     }
 
     if (playlist.trackIds.includes(trackId)) {

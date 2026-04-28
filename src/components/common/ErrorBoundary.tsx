@@ -30,7 +30,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         componentStack: errorInfo.componentStack,
         at: new Date().toISOString(),
       }
-      localStorage.setItem('goodogs-music:last-error', JSON.stringify(payload))
       window.electronWindow?.logError?.(JSON.stringify(payload))
     } catch {
       // ignore logging failures
