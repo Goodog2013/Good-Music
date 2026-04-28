@@ -54,14 +54,20 @@ export const App = () => {
 
   return (
     <ErrorBoundary
-      fallback={
+      fallback={(error) => (
         <div className="flex h-screen items-center justify-center px-6">
-          <div className="glass-panel max-w-lg p-6 text-center">
+          <div className="glass-panel max-w-2xl p-6 text-center">
             <p className="text-xs uppercase tracking-[0.24em] text-slate-300/80">Recovery Mode</p>
             <h2 className="mt-2 text-2xl font-semibold text-white">App crashed while rendering</h2>
             <p className="mt-2 text-sm text-slate-300/80">
               Click reset to clear local cache and restart the interface.
             </p>
+            {error ? (
+              <div className="mt-4 rounded-xl border border-rose-300/35 bg-rose-300/10 p-3 text-left">
+                <p className="text-xs uppercase tracking-[0.16em] text-rose-100/90">Error</p>
+                <p className="mt-1 break-words font-mono text-xs text-rose-100/90">{error.message}</p>
+              </div>
+            ) : null}
             <button
               type="button"
               onClick={() => {
@@ -74,7 +80,7 @@ export const App = () => {
             </button>
           </div>
         </div>
-      }
+      )}
     >
       <AudioEngineProvider>
         <div className="relative flex h-screen flex-col">

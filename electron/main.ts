@@ -51,6 +51,16 @@ const createWindow = () => {
 }
 
 app.whenReady().then(() => {
+  ipcMain.on('renderer:log-error', (_event, message: string) => {
+    try {
+      const logFile = path.join(app.getPath('userData'), 'renderer-errors.log')
+      const line = `[${new Date().toISOString()}] ${message}\n`
+      fs.appendFileSync(logFile, line, 'utf8')
+    } catch {
+      // ignore file logging failures
+    }
+  })
+
   ipcMain.handle('window:minimize', () => {
     mainWindow?.minimize()
   })

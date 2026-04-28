@@ -8,6 +8,7 @@ declare global {
       isMaximized: () => Promise<boolean>
       close: () => Promise<void>
       onMaximizedChanged: (callback: (value: boolean) => void) => () => void
+      logError?: (message: string) => void
     }
   }
 }
