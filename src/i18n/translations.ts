@@ -1,4 +1,4 @@
-﻿import type { AppLanguage } from '../types/music'
+import type { AppLanguage } from '../types/music'
 
 const en = {
   appTitle: 'Pulse Desktop',
@@ -32,6 +32,15 @@ const en = {
   addedToPlaylist: 'Track added to playlist',
   alreadyInPlaylist: 'Track already in playlist',
   noPlaylistToAdd: 'No playlists yet. Create one.',
+  playlistCover: 'Cover',
+  editPlaylistCover: 'Edit Playlist Cover',
+  uploadPlaylistCover: 'Upload Image',
+  searchInPlaylist: 'Search inside playlist',
+  noTracksInPlaylist: 'No tracks in this playlist yet.',
+  clearPlaylistCover: 'Reset Cover',
+  playlistIconUpdated: 'Playlist icon updated.',
+  playlistIconCleared: 'Playlist icon reset.',
+  invalidImageFile: 'Unsupported image file.',
   page: 'Page',
   prevPage: 'Prev',
   nextPage: 'Next',
@@ -122,6 +131,15 @@ const ru: Record<keyof typeof en, string> = {
   addedToPlaylist: 'Трек добавлен в плейлист',
   alreadyInPlaylist: 'Трек уже в плейлисте',
   noPlaylistToAdd: 'Плейлистов пока нет. Создайте новый.',
+  playlistCover: 'Обложка',
+  editPlaylistCover: 'Изменить обложку плейлиста',
+  uploadPlaylistCover: 'Загрузить изображение',
+  searchInPlaylist: 'Поиск в плейлисте',
+  noTracksInPlaylist: 'В этом плейлисте пока нет треков.',
+  clearPlaylistCover: 'Сбросить обложку',
+  playlistIconUpdated: 'Иконка плейлиста обновлена.',
+  playlistIconCleared: 'Обложка плейлиста сброшена.',
+  invalidImageFile: 'Неподдерживаемый файл изображения.',
   page: 'Страница',
   prevPage: 'Назад',
   nextPage: 'Вперёд',
@@ -185,3 +203,4 @@ export const translations = { en, ru } as const
 export type TranslationKey = keyof typeof en
 
 export const getText = (language: AppLanguage, key: TranslationKey) => translations[language][key]
+

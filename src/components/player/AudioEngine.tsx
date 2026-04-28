@@ -203,8 +203,17 @@ export const AudioEngineProvider = ({ children }: PropsWithChildren) => {
       // Ignore seek failures for invalid track state.
     }
 
+    if (isPlaying && audio.paused) {
+      audio
+        .play()
+        .catch(() => {
+          usePlayerStore.setState({ isPlaying: false })
+          setPlaybackNotice('Could not continue playback. Press Play again.')
+        })
+    }
+
     consumeSeek()
-  }, [consumeSeek, pendingSeek])
+  }, [consumeSeek, isPlaying, pendingSeek, setPlaybackNotice])
 
   useEffect(() => {
     if (!visualizerEnabled) {

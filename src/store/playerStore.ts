@@ -43,6 +43,9 @@ interface PlayerStore {
   deletePlaylist: (playlistId: string) => void
   addTrackToPlaylist: (trackId: string, playlistId: string) => void
   removeTrackFromPlaylist: (trackId: string, playlistId: string) => void
+  setPlaylistCoverImage: (playlistId: string, coverImage: string) => void
+  setPlaylistCoverFromTrack: (playlistId: string, trackId: string) => void
+  clearPlaylistCover: (playlistId: string) => void
   playPlaylist: (playlistId: string) => void
   playTrack: (trackId: string, queueIds?: string[]) => void
   togglePlayPause: () => void
@@ -57,6 +60,7 @@ interface PlayerStore {
   cycleRepeatMode: () => void
   toggleFavorite: (trackId: string) => void
   addLocalTracks: (files: File[]) => Promise<{ added: number; skipped: number }>
+  addLocalTracksFromPaths: (paths: string[]) => Promise<{ added: number; skipped: number }>
   setVisualizerEnabled: (enabled: boolean) => void
   setVisualizerIntensity: (intensity: number) => void
   setVisualizerMode: (mode: VisualizerMode) => void
@@ -76,6 +80,22 @@ const ensureUnique = (ids: string[]) => Array.from(new Set(ids))
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 
 const safeNumber = (value: unknown, fallback = 0) => (typeof value === 'number' && Number.isFinite(value) ? value : fallback)
+
+const isSupportedAudioPath = (filePath: string) => {
+  const normalized = filePath.toLowerCase()
+  return normalized.endsWith('.mp3') || normalized.endsWith('.wav') || normalized.endsWith('.ogg')
+}
+
+const getFileNameFromPath = (filePath: string) => {
+  const normalized = filePath.replace(/\\/g, '/')
+  const fileName = normalized.split('/').pop() ?? filePath
+
+  try {
+    return decodeURIComponent(fileName)
+  } catch {
+    return fileName
+  }
+}
 
 const parseVisualizerMode = (value: unknown): VisualizerMode => {
   if (value === 'orbital' || value === 'rings' || value === 'wave') {
@@ -159,6 +179,8 @@ const sanitizePlaylist = (value: unknown): Playlist | null => {
     name,
     description: typeof value.description === 'string' ? value.description : 'Custom playlist',
     coverHue: safeNumber(value.coverHue, 260),
+    coverImage: typeof value.coverImage === 'string' ? value.coverImage : undefined,
+    coverTrackId: typeof value.coverTrackId === 'string' ? value.coverTrackId : undefined,
     trackIds: Array.isArray(value.trackIds) ? value.trackIds.filter((item): item is string => typeof item === 'string') : [],
     createdAt: safeNumber(value.createdAt, Date.now()),
   }
@@ -254,6 +276,7 @@ const hydrateFromSnapshot = (snapshot: PersistedLibrarySnapshot) => {
   const hydratedPlaylists = snapshot.playlists.map((playlist) => ({
     ...playlist,
     trackIds: playlist.trackIds.filter((trackId) => validTrackIds.has(trackId)),
+    coverTrackId: playlist.coverTrackId && validTrackIds.has(playlist.coverTrackId) ? playlist.coverTrackId : undefined,
   }))
 
   const fallbackQueue = hydratedPlaylists[0]?.trackIds.length
@@ -403,6 +426,63 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
         return {
           ...playlist,
           trackIds: playlist.trackIds.filter((id) => id !== trackId),
+          coverTrackId: playlist.coverTrackId === trackId ? undefined : playlist.coverTrackId,
+        }
+      }),
+    }))
+  },
+  setPlaylistCoverImage: (playlistId, coverImage) => {
+    const normalized = coverImage.trim()
+    if (!normalized) {
+      return
+    }
+
+    set((state) => ({
+      playlists: state.playlists.map((playlist) => {
+        if (playlist.id !== playlistId) {
+          return playlist
+        }
+
+        return {
+          ...playlist,
+          coverImage: normalized,
+          coverTrackId: undefined,
+        }
+      }),
+    }))
+  },
+  setPlaylistCoverFromTrack: (playlistId, trackId) => {
+    const state = get()
+    const targetPlaylist = state.playlists.find((playlist) => playlist.id === playlistId)
+    if (!targetPlaylist || !targetPlaylist.trackIds.includes(trackId)) {
+      return
+    }
+
+    set((current) => ({
+      playlists: current.playlists.map((playlist) => {
+        if (playlist.id !== playlistId) {
+          return playlist
+        }
+
+        return {
+          ...playlist,
+          coverTrackId: trackId,
+          coverImage: undefined,
+        }
+      }),
+    }))
+  },
+  clearPlaylistCover: (playlistId) => {
+    set((state) => ({
+      playlists: state.playlists.map((playlist) => {
+        if (playlist.id !== playlistId) {
+          return playlist
+        }
+
+        return {
+          ...playlist,
+          coverTrackId: undefined,
+          coverImage: undefined,
         }
       }),
     }))
@@ -594,6 +674,141 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
         favoriteTrackIds: [trackId, ...state.favoriteTrackIds],
       }
     })
+  },
+  addLocalTracksFromPaths: async (paths) => {
+    if (paths.length === 0) {
+      set({ playbackNotice: 'No files selected.' })
+      return { added: 0, skipped: 0 }
+    }
+
+    if (!window.electronWindow?.ingestAudioFiles) {
+      set({ playbackNotice: 'Desktop import is unavailable.' })
+      return { added: 0, skipped: paths.length }
+    }
+
+    const sourcePaths = paths.filter((filePath) => typeof filePath === 'string' && filePath.length > 0 && isSupportedAudioPath(filePath))
+    const unsupported = paths.length - sourcePaths.length
+
+    if (sourcePaths.length === 0) {
+      set({ playbackNotice: 'Only mp3, wav and ogg files are supported.' })
+      return { added: 0, skipped: unsupported }
+    }
+
+    const imported = await window.electronWindow.ingestAudioFiles(sourcePaths)
+    const missed = Math.max(0, sourcePaths.length - imported.length)
+    const skipped = unsupported + missed
+    const linkedFromSourceCount = imported.filter((item) => item.destinationPath === item.sourcePath).length
+    const safeTracks: Track[] = []
+    const metadataQueue: Array<{ trackId: string; tagPath: string }> = []
+
+    for (const item of imported) {
+      const fileName = getFileNameFromPath(item.sourcePath)
+      const parsed = parseArtistAndTitle(fileName)
+      const hue = fileName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 360
+      const trackId = makeId('track')
+      const url = toFileUrl(item.destinationPath)
+
+      safeTracks.push({
+        id: trackId,
+        title: parsed.title,
+        artist: parsed.artist,
+        duration: 0,
+        source: 'local',
+        url,
+        filePath: item.destinationPath,
+        artwork: pickArtworkGradient(hue),
+        hue,
+        fileName,
+        isMissing: false,
+        createdAt: Date.now(),
+      })
+
+      metadataQueue.push({
+        trackId,
+        tagPath: item.destinationPath,
+      })
+    }
+
+    if (safeTracks.length === 0) {
+      set({ playbackNotice: 'Could not import selected files.' })
+      return { added: 0, skipped: paths.length }
+    }
+
+    set((state) => {
+      const queue = resolveQueue(state)
+
+      return {
+        tracks: [...safeTracks, ...state.tracks],
+        queueTrackIds: [...queue, ...safeTracks.map((track) => track.id)],
+        playbackNotice:
+          linkedFromSourceCount > 0
+            ? `${safeTracks.length} track(s) added. ${linkedFromSourceCount} linked from source path.`
+            : skipped > 0
+              ? `${safeTracks.length} track(s) added. ${skipped} skipped.`
+              : `${safeTracks.length} track(s) added.`,
+      }
+    })
+
+    void (async () => {
+      if (!window.electronWindow?.readAudioTags || metadataQueue.length === 0) {
+        return
+      }
+
+      const tagsPayload = await window.electronWindow.readAudioTags(metadataQueue.map((item) => item.tagPath))
+      if (tagsPayload.length === 0) {
+        return
+      }
+
+      const bySourcePath = new Map(tagsPayload.map((item) => [item.sourcePath, item]))
+      const byTrackId = new Map(
+        metadataQueue.map((entry) => {
+          const tag = bySourcePath.get(entry.tagPath)
+          return [
+            entry.trackId,
+            {
+              title: tag?.title?.trim(),
+              artist: tag?.artist?.trim(),
+              artwork: tag?.artwork,
+            },
+          ] as const
+        }),
+      )
+
+      set((state) => {
+        let changed = false
+
+        const nextTracks = state.tracks.map((track) => {
+          const next = byTrackId.get(track.id)
+          if (!next) {
+            return track
+          }
+
+          const nextTitle = next.title || track.title
+          const nextArtist = next.artist || track.artist
+          const nextArtwork = next.artwork || track.artwork
+
+          if (nextTitle === track.title && nextArtist === track.artist && nextArtwork === track.artwork) {
+            return track
+          }
+
+          changed = true
+          return {
+            ...track,
+            title: nextTitle,
+            artist: nextArtist,
+            artwork: nextArtwork,
+          }
+        })
+
+        if (!changed) {
+          return state
+        }
+
+        return { tracks: nextTracks }
+      })
+    })()
+
+    return { added: safeTracks.length, skipped }
   },
   addLocalTracks: async (files) => {
     if (files.length === 0) {

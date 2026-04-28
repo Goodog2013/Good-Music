@@ -1,7 +1,8 @@
-﻿import { motion } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { ListPlus, PlayCircle, Trash2, UserRoundPlus } from 'lucide-react'
 import { useMemo } from 'react'
 import { GlassCard } from '../components/common/GlassCard'
+import { PlaylistCoverPopover } from '../components/common/PlaylistCoverPopover'
 import { useI18n } from '../hooks/useI18n'
 import { usePlayerStore } from '../store/playerStore'
 import { toArtworkStyle } from '../utils/artwork'
@@ -22,6 +23,10 @@ export const PlaylistScreen = () => {
   const { t } = useI18n()
 
   const activePlaylist = playlists.find((playlist) => playlist.id === activePlaylistId) ?? null
+
+  const activeCoverTrack = activePlaylist?.coverTrackId
+    ? tracks.find((track) => track.id === activePlaylist.coverTrackId) ?? null
+    : null
 
   const filteredTracks = useMemo(() => {
     if (!activePlaylist) {
@@ -70,24 +75,34 @@ export const PlaylistScreen = () => {
     )
   }
 
+  const coverArtwork = activePlaylist.coverImage ?? activeCoverTrack?.artwork
+  const coverStyle = coverArtwork
+    ? toArtworkStyle(coverArtwork)
+    : {
+        background: `linear-gradient(145deg, hsl(${activePlaylist.coverHue} 88% 58% / 0.9), hsl(${(activePlaylist.coverHue + 70) % 360} 92% 60% / 0.85))`,
+      }
+
   return (
-    <motion.section initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.34 }} className="space-y-4">
-      <GlassCard className="p-4">
+    <motion.section
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.34 }}
+      className="relative space-y-4"
+    >
+      <GlassCard className="relative z-20 overflow-visible p-4">
         <div className="flex flex-wrap items-center gap-4">
-          <div
-            className="h-24 w-24 rounded-2xl border border-white/15"
-            style={{
-              background: `linear-gradient(145deg, hsl(${activePlaylist.coverHue} 88% 58% / 0.9), hsl(${(activePlaylist.coverHue + 70) % 360} 92% 60% / 0.85))`,
-            }}
-          />
+          <div className="h-24 w-24 rounded-2xl border border-white/15 bg-cover bg-center" style={coverStyle} />
           <div className="min-w-0 flex-1">
             <p className="text-xs uppercase tracking-[0.24em] text-slate-300/80">{t('playlist')}</p>
             <h2 className="truncate font-display text-2xl text-white">{activePlaylist.name}</h2>
             <p className="mt-1 text-sm text-slate-300/75">{activePlaylist.description}</p>
-            <p className="mt-2 text-xs text-slate-400">{activePlaylist.trackIds.length} {t('tracks')}</p>
+            <p className="mt-2 text-xs text-slate-400">
+              {activePlaylist.trackIds.length} {t('tracks')}
+            </p>
           </div>
 
           <div className="flex gap-2">
+            <PlaylistCoverPopover playlistId={activePlaylist.id} playlistTrackIds={activePlaylist.trackIds} />
             <button
               type="button"
               onClick={() => playPlaylist(activePlaylist.id)}
@@ -146,7 +161,11 @@ export const PlaylistScreen = () => {
                 <button
                   type="button"
                   onClick={() => playTrack(track.id, activePlaylist.trackIds)}
-                  className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${currentTrackId === track.id ? 'border-cyan-300/65 bg-cyan-300/20 text-cyan-100' : 'border-white/15 text-slate-200 hover:border-cyan-300/50 hover:text-cyan-100'}`}
+                  className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
+                    currentTrackId === track.id
+                      ? 'border-cyan-300/65 bg-cyan-300/20 text-cyan-100'
+                      : 'border-white/15 text-slate-200 hover:border-cyan-300/50 hover:text-cyan-100'
+                  }`}
                   title={t('play')}
                 >
                   {t('play')}
@@ -217,3 +236,4 @@ export const PlaylistScreen = () => {
     </motion.section>
   )
 }
+

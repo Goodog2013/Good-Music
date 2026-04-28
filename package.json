@@ -1,7 +1,7 @@
 {
   "name": "goodogs-music-desktop",
   "private": true,
-  "version": "1.0.7",
+  "version": "1.0.8",
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
@@ -55,6 +55,12 @@
     "directories": {
       "output": "release"
     },
+    "extraResources": [
+      {
+        "from": "src/ICO.ico",
+        "to": "ICO.ico"
+      }
+    ],
     "files": [
       "dist/**/*",
       "dist-electron/**/*",

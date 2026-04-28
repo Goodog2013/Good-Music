@@ -32,6 +32,8 @@ export interface Playlist {
   name: string
   description: string
   coverHue: number
+  coverImage?: string
+  coverTrackId?: string
   trackIds: string[]
   createdAt: number
 }

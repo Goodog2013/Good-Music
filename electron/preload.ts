@@ -6,6 +6,13 @@ interface IngestedAudioFile {
   fileName: string
 }
 
+interface AudioTagPayload {
+  sourcePath: string
+  title?: string
+  artist?: string
+  artwork?: string
+}
+
 contextBridge.exposeInMainWorld('electronWindow', {
   minimize: () => ipcRenderer.invoke('window:minimize'),
   maximizeToggle: () => ipcRenderer.invoke('window:maximize-toggle') as Promise<boolean>,
@@ -32,7 +39,9 @@ contextBridge.exposeInMainWorld('electronWindow', {
       return ''
     }
   },
+  pickAudioFiles: () => ipcRenderer.invoke('library:pick-audio-files') as Promise<string[]>,
   ingestAudioFiles: (paths: string[]) => ipcRenderer.invoke('library:ingest-files', paths) as Promise<IngestedAudioFile[]>,
+  readAudioTags: (paths: string[]) => ipcRenderer.invoke('library:read-audio-tags', paths) as Promise<AudioTagPayload[]>,
   loadConfigFile: () => ipcRenderer.invoke('library:load-config') as Promise<string | null>,
   saveConfigFile: (payload: string) => ipcRenderer.invoke('library:save-config', payload) as Promise<void>,
   importConfigFile: () => ipcRenderer.invoke('library:import-config') as Promise<string | null>,

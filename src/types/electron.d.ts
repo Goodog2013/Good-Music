@@ -7,6 +7,13 @@ declare global {
     fileName: string
   }
 
+  interface AudioTagPayload {
+    sourcePath: string
+    title?: string
+    artist?: string
+    artwork?: string
+  }
+
   interface Window {
     electronWindow?: {
       minimize: () => Promise<void>
@@ -16,7 +23,9 @@ declare global {
       onMaximizedChanged: (callback: (value: boolean) => void) => () => void
       logError?: (message: string) => void
       getPathForFile?: (file: File) => string
+      pickAudioFiles?: () => Promise<string[]>
       ingestAudioFiles?: (paths: string[]) => Promise<IngestedAudioFile[]>
+      readAudioTags?: (paths: string[]) => Promise<AudioTagPayload[]>
       loadConfigFile?: () => Promise<string | null>
       saveConfigFile?: (payload: string) => Promise<void>
       importConfigFile?: () => Promise<string | null>

@@ -16,6 +16,20 @@ export const readAudioDuration = (file: File) =>
     audio.onerror = () => done(0)
   })
 
+export const readAudioDurationFromUrl = (url: string) =>
+  new Promise<number>((resolve) => {
+    const audio = document.createElement('audio')
+
+    const done = (duration: number) => {
+      resolve(Number.isFinite(duration) ? duration : 0)
+    }
+
+    audio.preload = 'metadata'
+    audio.src = url
+    audio.onloadedmetadata = () => done(audio.duration)
+    audio.onerror = () => done(0)
+  })
+
 export interface AudioTagInfo {
   title?: string
   artist?: string
@@ -187,6 +201,25 @@ const parseArtwork = async (picture: { data?: unknown; format?: unknown } | unde
 export const readAudioTagInfo = (file: File) =>
   new Promise<AudioTagInfo>((resolve) => {
     new jsmediatags.Reader(file)
+      .setTagsToRead(['title', 'artist', 'picture'])
+      .read({
+        onSuccess: async (result: { tags: { title?: string; artist?: string; picture?: { data?: unknown; format?: unknown } } }) => {
+          const tags = result.tags ?? {}
+          const artwork = await parseArtwork(tags.picture)
+
+          resolve({
+            title: typeof tags.title === 'string' ? tags.title : undefined,
+            artist: typeof tags.artist === 'string' ? tags.artist : undefined,
+            artwork,
+          })
+        },
+        onError: () => resolve({}),
+      })
+  })
+
+export const readAudioTagInfoFromPath = (filePath: string) =>
+  new Promise<AudioTagInfo>((resolve) => {
+    new jsmediatags.Reader(filePath)
       .setTagsToRead(['title', 'artist', 'picture'])
       .read({
         onSuccess: async (result: { tags: { title?: string; artist?: string; picture?: { data?: unknown; format?: unknown } } }) => {

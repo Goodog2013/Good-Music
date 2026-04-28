@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { useEffect, useMemo, useRef, type ChangeEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, type ChangeEvent } from 'react'
 import { ErrorBoundary } from '../components/common/ErrorBoundary'
 import { Sidebar } from '../components/layout/Sidebar'
 import { TitleBar } from '../components/layout/TitleBar'
@@ -17,6 +17,7 @@ const viewOrder: AppView[] = ['home', 'playlist', 'favorites', 'settings']
 export const App = () => {
   const activeView = usePlayerStore((state) => state.activeView)
   const addLocalTracks = usePlayerStore((state) => state.addLocalTracks)
+  const addLocalTracksFromPaths = usePlayerStore((state) => state.addLocalTracksFromPaths)
   const setActiveView = usePlayerStore((state) => state.setActiveView)
   const playbackNotice = usePlayerStore((state) => state.playbackNotice)
   const dismissPlaybackNotice = usePlayerStore((state) => state.dismissPlaybackNotice)
@@ -27,9 +28,28 @@ export const App = () => {
   const accent = usePlayerStore((state) => state.settings.accent)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
-  const onImport = () => {
-    fileInputRef.current?.click()
-  }
+  const onImport = useCallback(() => {
+    const pickDesktopFiles = async () => {
+      if (!window.electronWindow?.pickAudioFiles) {
+        return false
+      }
+
+      const selected = await window.electronWindow.pickAudioFiles()
+      if (selected.length > 0) {
+        await addLocalTracksFromPaths(selected)
+        setActiveView('home')
+      }
+
+      return true
+    }
+
+    void (async () => {
+      const handledByDesktopDialog = await pickDesktopFiles()
+      if (!handledByDesktopDialog) {
+        fileInputRef.current?.click()
+      }
+    })()
+  }, [addLocalTracksFromPaths, setActiveView])
 
   const onFilesPicked = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files ? Array.from(event.target.files) : []
@@ -54,7 +74,7 @@ export const App = () => {
       default:
         return <HomeScreen onImport={onImport} />
     }
-  }, [activeView])
+  }, [activeView, onImport])
 
   useEffect(() => {
     document.body.dataset.theme = theme
@@ -93,13 +113,24 @@ export const App = () => {
     }
 
     let timeout: ReturnType<typeof setTimeout> | null = null
-    const unsubscribe = usePlayerStore.subscribe(() => {
+    const unsubscribe = usePlayerStore.subscribe((state, prevState) => {
+      const persistedChanged =
+        state.tracks !== prevState.tracks ||
+        state.playlists !== prevState.playlists ||
+        state.favoriteTrackIds !== prevState.favoriteTrackIds ||
+        state.activePlaylistId !== prevState.activePlaylistId ||
+        state.settings !== prevState.settings
+
+      if (!persistedChanged) {
+        return
+      }
+
       if (timeout) {
         clearTimeout(timeout)
       }
       timeout = setTimeout(() => {
         void usePlayerStore.getState().saveProjectConfig()
-      }, 200)
+      }, 900)
     })
 
     return () => {

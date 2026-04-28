@@ -1,5 +1,6 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Maximize2, Minimize2, Minus, Search, Square, X } from 'lucide-react'
+import appIcon from '../../ICO.ico'
 import { useI18n } from '../../hooks/useI18n'
 import { usePlayerStore } from '../../store/playerStore'
 import { cn } from '../../utils/cn'
@@ -98,7 +99,7 @@ export const TitleBar = ({ onImport }: TitleBarProps) => {
   return (
     <header className="window-drag relative z-30 flex h-14 items-center border-b border-white/10 bg-black/20 px-4 backdrop-blur-xl">
       <div className="window-no-drag flex min-w-0 items-center gap-3">
-        <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-fuchsia-500 via-blue-500 to-cyan-400 shadow-neon" />
+        <img src={appIcon} alt="Good Music" className="h-8 w-8 rounded-xl border border-white/15 object-cover shadow-neon" />
         <div className="min-w-0">
           <p className="truncate text-xs uppercase tracking-[0.26em] text-cyan-100/70">{t('appBadge')}</p>
           <p className="truncate font-display text-sm text-white/95">{t('appTitle')}</p>
