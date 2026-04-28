@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { app, BrowserWindow, ipcMain } from 'electron'
@@ -15,6 +16,10 @@ const sendWindowState = () => {
 }
 
 const createWindow = () => {
+  const preloadMjsPath = path.join(__dirname, 'preload.mjs')
+  const preloadJsPath = path.join(__dirname, 'preload.js')
+  const preloadPath = fs.existsSync(preloadMjsPath) ? preloadMjsPath : preloadJsPath
+
   mainWindow = new BrowserWindow({
     width: 1460,
     height: 940,
@@ -24,7 +29,7 @@ const createWindow = () => {
     titleBarStyle: 'hidden',
     backgroundColor: '#070711',
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
