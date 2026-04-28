@@ -31,7 +31,13 @@ export const toFileUrl = (filePath: string) => {
 const MAX_EMBEDDED_ARTWORK_BYTES = 950_000
 const ARTWORK_PREVIEW_SIZE = 240
 
-const toUint8Array = (data: number[] | Uint8Array | ArrayBufferView) => {
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
+
+const toUint8Array = (data: unknown) => {
+  if (data instanceof ArrayBuffer) {
+    return new Uint8Array(data)
+  }
+
   if (Array.isArray(data)) {
     return Uint8Array.from(data)
   }
@@ -40,7 +46,55 @@ const toUint8Array = (data: number[] | Uint8Array | ArrayBufferView) => {
     return new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
   }
 
+  if (isRecord(data) && typeof data.length === 'number' && Number.isFinite(data.length)) {
+    const size = Math.max(0, Math.floor(data.length))
+    const bytes = new Uint8Array(size)
+    for (let index = 0; index < size; index += 1) {
+      const value = data[String(index)]
+      bytes[index] = typeof value === 'number' ? value & 0xff : 0
+    }
+    return bytes
+  }
+
   return new Uint8Array(0)
+}
+
+const normalizeFormat = (format: unknown) => (typeof format === 'string' ? format.replaceAll('\x00', '').trim().toLowerCase() : '')
+
+const detectImageMime = (bytes: Uint8Array) => {
+  if (bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) {
+    return 'image/png'
+  }
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+    return 'image/jpeg'
+  }
+  if (bytes.length >= 6) {
+    const sig = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5])
+    if (sig === 'GIF87a' || sig === 'GIF89a') {
+      return 'image/gif'
+    }
+  }
+  if (bytes.length >= 12) {
+    const riff = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3])
+    const webp = String.fromCharCode(bytes[8], bytes[9], bytes[10], bytes[11])
+    if (riff === 'RIFF' && webp === 'WEBP') {
+      return 'image/webp'
+    }
+  }
+
+  return 'application/octet-stream'
+}
+
+const decodeText = (bytes: Uint8Array) => {
+  try {
+    return new TextDecoder().decode(bytes).trim()
+  } catch {
+    let text = ''
+    for (let index = 0; index < bytes.length; index += 1) {
+      text += String.fromCharCode(bytes[index])
+    }
+    return text.trim()
+  }
 }
 
 const readBlobAsDataUrl = (blob: Blob) =>
@@ -93,8 +147,8 @@ const resizeArtwork = (blob: Blob) =>
     image.src = objectUrl
   })
 
-const parseArtwork = async (picture: { data?: number[] | Uint8Array | ArrayBufferView; format?: string } | undefined) => {
-  if (!picture?.data || typeof picture.format !== 'string') {
+const parseArtwork = async (picture: { data?: unknown; format?: unknown } | undefined) => {
+  if (!picture?.data) {
     return undefined
   }
 
@@ -103,10 +157,21 @@ const parseArtwork = async (picture: { data?: number[] | Uint8Array | ArrayBuffe
     return undefined
   }
 
+  const format = normalizeFormat(picture.format)
+
+  if (format === '-->') {
+    const linkedUrl = decodeText(bytes)
+    if (linkedUrl.startsWith('http://') || linkedUrl.startsWith('https://') || linkedUrl.startsWith('file://')) {
+      return linkedUrl
+    }
+    return undefined
+  }
+
+  const blobType = format.startsWith('image/') ? format : detectImageMime(bytes)
   const safeBuffer = new ArrayBuffer(bytes.byteLength)
   const safeBytes = new Uint8Array(safeBuffer)
   safeBytes.set(bytes)
-  const blob = new Blob([safeBuffer], { type: picture.format })
+  const blob = new Blob([safeBuffer], { type: blobType })
   const resized = await resizeArtwork(blob)
   if (resized) {
     return resized
@@ -124,9 +189,7 @@ export const readAudioTagInfo = (file: File) =>
     new jsmediatags.Reader(file)
       .setTagsToRead(['title', 'artist', 'picture'])
       .read({
-        onSuccess: async (result: {
-          tags: { title?: string; artist?: string; picture?: { data?: number[] | Uint8Array | ArrayBufferView; format?: string } }
-        }) => {
+        onSuccess: async (result: { tags: { title?: string; artist?: string; picture?: { data?: unknown; format?: unknown } } }) => {
           const tags = result.tags ?? {}
           const artwork = await parseArtwork(tags.picture)
 

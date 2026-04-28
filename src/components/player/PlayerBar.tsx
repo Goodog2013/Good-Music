@@ -3,6 +3,7 @@ import { Heart, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Vo
 import { useMemo } from 'react'
 import { useI18n } from '../../hooks/useI18n'
 import { usePlayerStore } from '../../store/playerStore'
+import { toArtworkStyle } from '../../utils/artwork'
 import { formatTime } from '../../utils/time'
 
 const RepeatIcon = ({ mode }: { mode: 'off' | 'all' | 'one' }) => {
@@ -55,10 +56,7 @@ export const PlayerBar = () => {
         >
           <div
             className="h-14 w-14 rounded-xl border border-white/15 bg-cover bg-center shadow-neon"
-            style={{
-              backgroundImage: currentTrack?.artwork?.startsWith('data:') ? `url(${currentTrack.artwork})` : undefined,
-              background: currentTrack?.artwork?.startsWith('data:') ? undefined : currentTrack?.artwork ?? 'linear-gradient(145deg, #2d3f70, #8146ff)',
-            }}
+            style={toArtworkStyle(currentTrack?.artwork)}
           />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-white">{currentTrack?.title ?? 'No Track Selected'}</p>

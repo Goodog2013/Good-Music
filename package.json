@@ -1,7 +1,7 @@
 {
   "name": "goodogs-music-desktop",
   "private": true,
-  "version": "1.0.4",
+  "version": "1.0.5",
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
@@ -10,8 +10,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "electron .",
-    "dist:win": "npm run build && electron-builder --win nsis",
-    "dist:portable": "npm run build && electron-builder --win portable"
+    "clean:release": "node scripts/clean-release.mjs",
+    "dist:win": "npm run clean:release && npm run build && electron-builder --win nsis",
+    "dist:portable": "npm run clean:release && npm run build && electron-builder --win portable"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",

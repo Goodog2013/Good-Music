@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import { GlassCard } from '../components/common/GlassCard'
 import { useI18n } from '../hooks/useI18n'
 import { usePlayerStore } from '../store/playerStore'
+import { toArtworkStyle } from '../utils/artwork'
 import { formatTime } from '../utils/time'
 
 export const FavoritesScreen = () => {
@@ -101,7 +102,7 @@ export const FavoritesScreen = () => {
                   className="flex min-w-0 flex-1 items-center gap-3 text-left"
                   title={t('play')}
                 >
-                  <div className="h-10 w-10 rounded-lg border border-white/10 bg-cover bg-center" style={{ backgroundImage: track.artwork.startsWith('data:') ? `url(${track.artwork})` : undefined, background: track.artwork.startsWith('data:') ? undefined : track.artwork }} />
+                  <div className="h-10 w-10 rounded-lg border border-white/10 bg-cover bg-center" style={toArtworkStyle(track.artwork)} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-white">{track.title}</p>
                     <p className="truncate text-xs text-slate-300/75">{track.artist}</p>

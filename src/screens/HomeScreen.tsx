@@ -6,6 +6,7 @@ import { GlassCard } from '../components/common/GlassCard'
 import { VisualizerCanvas } from '../components/visualizer/VisualizerCanvas'
 import { useI18n } from '../hooks/useI18n'
 import { usePlayerStore } from '../store/playerStore'
+import { toArtworkStyle } from '../utils/artwork'
 import { formatTime } from '../utils/time'
 
 interface HomeScreenProps {
@@ -213,10 +214,7 @@ export const HomeScreen = ({ onImport }: HomeScreenProps) => {
                   >
                     <div
                       className="h-10 w-10 rounded-lg border border-white/10 bg-cover bg-center"
-                      style={{
-                        backgroundImage: track.artwork.startsWith('data:') ? `url(${track.artwork})` : undefined,
-                        background: track.artwork.startsWith('data:') ? undefined : track.artwork,
-                      }}
+                      style={toArtworkStyle(track.artwork)}
                     />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-white">{track.title}</p>
