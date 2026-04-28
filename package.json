@@ -1,7 +1,7 @@
 {
   "name": "goodogs-music-desktop",
   "private": true,
-  "version": "1.0.6",
+  "version": "1.0.7",
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
@@ -50,6 +50,7 @@
   "build": {
     "appId": "com.goodog.music",
     "productName": "Good Music",
+    "icon": "src/ICO.ico",
     "asar": true,
     "directories": {
       "output": "release"
@@ -60,6 +61,7 @@
       "package.json"
     ],
     "win": {
+      "icon": "src/ICO.ico",
       "target": [
         "nsis"
       ],
@@ -70,7 +72,10 @@
       "allowToChangeInstallationDirectory": true,
       "perMachine": false,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "installerIcon": "src/ICO.ico",
+      "uninstallerIcon": "src/ICO.ico",
+      "installerHeaderIcon": "src/ICO.ico"
     }
   }
 }

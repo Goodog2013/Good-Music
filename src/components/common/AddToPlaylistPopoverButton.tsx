@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../../hooks/useI18n'
 import { usePlayerStore } from '../../store/playerStore'
 
@@ -17,7 +17,17 @@ export const AddToPlaylistPopoverButton = ({ trackId, className }: AddToPlaylist
 
   const [open, setOpen] = useState(false)
   const [newPlaylistName, setNewPlaylistName] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const rootRef = useRef<HTMLDivElement | null>(null)
+
+  const filteredPlaylists = useMemo(() => {
+    const normalized = searchQuery.trim().toLowerCase()
+    if (!normalized) {
+      return playlists
+    }
+
+    return playlists.filter((playlist) => playlist.name.toLowerCase().includes(normalized))
+  }, [playlists, searchQuery])
 
   useEffect(() => {
     if (!open) {
@@ -103,7 +113,13 @@ export const AddToPlaylistPopoverButton = ({ trackId, className }: AddToPlaylist
             <p className="px-2 pb-2 text-xs text-slate-300/80">{t('noPlaylistToAdd')}</p>
           ) : (
             <div className="max-h-40 space-y-1 overflow-y-auto px-1 pb-2">
-              {playlists.map((playlist) => (
+              <input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder={t('searchPlaceholder')}
+                className="mb-2 w-full rounded-lg border border-white/15 bg-night-950/80 px-2 py-1.5 text-xs text-white placeholder:text-slate-400 focus:border-cyan-300/65 focus:outline-none"
+              />
+              {filteredPlaylists.map((playlist) => (
                 <button
                   key={playlist.id}
                   type="button"
@@ -115,6 +131,9 @@ export const AddToPlaylistPopoverButton = ({ trackId, className }: AddToPlaylist
                   <span className="ml-2 shrink-0 text-[10px] text-slate-400">{playlist.trackIds.length}</span>
                 </button>
               ))}
+              {filteredPlaylists.length === 0 ? (
+                <p className="px-2 py-1 text-xs text-slate-300/75">{t('noTracksFound')}</p>
+              ) : null}
             </div>
           )}
 
@@ -144,4 +163,3 @@ export const AddToPlaylistPopoverButton = ({ trackId, className }: AddToPlaylist
     </div>
   )
 }
-
