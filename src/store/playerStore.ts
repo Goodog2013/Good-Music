@@ -595,11 +595,35 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
       return { added: 0, skipped: 0 }
     }
 
+    const resolveSourcePath = (file: File) => {
+      const legacyPath = (file as File & { path?: string }).path
+      if (typeof legacyPath === 'string' && legacyPath.length > 0) {
+        return legacyPath
+      }
+
+      if (window.electronWindow?.getPathForFile) {
+        const nextPath = window.electronWindow.getPathForFile(file)
+        if (typeof nextPath === 'string' && nextPath.length > 0) {
+          return nextPath
+        }
+      }
+
+      return undefined
+    }
+
+    const fileSourcePathMap = new Map<File, string>()
+    files.forEach((file) => {
+      const resolvedPath = resolveSourcePath(file)
+      if (resolvedPath) {
+        fileSourcePathMap.set(file, resolvedPath)
+      }
+    })
+
     let importedPathMap = new Map<string, string>()
 
     if (window.electronWindow?.ingestAudioFiles) {
       const sourcePaths = files
-        .map((file) => (file as File & { path?: string }).path)
+        .map((file) => fileSourcePathMap.get(file))
         .filter((path): path is string => typeof path === 'string' && path.length > 0)
 
       if (sourcePaths.length > 0) {
@@ -608,43 +632,52 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
       }
     }
 
-    const tracks = await Promise.all(
-      files.map(async (file) => {
-        if (!isSupportedAudioFile(file)) {
-          return null
-        }
+    const safeTracks: Track[] = []
+    let supportedCount = 0
+    let skipped = 0
 
-        const [duration, tags] = await Promise.all([readAudioDuration(file), readAudioTagInfo(file)])
-        const parsedFromName = parseArtistAndTitle(file.name)
-        const hue = file.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 360
+    for (const file of files) {
+      if (!isSupportedAudioFile(file)) {
+        skipped += 1
+        continue
+      }
+      supportedCount += 1
 
-        const sourcePath = (file as File & { path?: string }).path
-        const filePath = sourcePath ? importedPathMap.get(sourcePath) : undefined
+      const [duration, tags] = await Promise.all([readAudioDuration(file), readAudioTagInfo(file)])
+      const parsedFromName = parseArtistAndTitle(file.name)
+      const hue = file.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 360
 
-        const nextTrack: Track = {
-          id: makeId('track'),
-          title: tags.title?.trim() || parsedFromName.title,
-          artist: tags.artist?.trim() || parsedFromName.artist,
-          duration,
-          source: 'local',
-          url: filePath ? toFileUrl(filePath) : URL.createObjectURL(file),
-          filePath,
-          artwork: tags.artwork || pickArtworkGradient(hue),
-          hue,
-          fileName: file.name,
-          isMissing: false,
-          createdAt: Date.now(),
-        }
+      const sourcePath = fileSourcePathMap.get(file)
+      const filePath = sourcePath ? importedPathMap.get(sourcePath) : undefined
 
-        return nextTrack
-      }),
-    )
+      // In desktop mode we should always keep track URLs file-based to avoid blob memory pressure.
+      if (window.electronWindow?.ingestAudioFiles && !filePath) {
+        skipped += 1
+        continue
+      }
 
-    const safeTracks = tracks.filter((track): track is Track => Boolean(track))
-    const skipped = files.length - safeTracks.length
+      safeTracks.push({
+        id: makeId('track'),
+        title: tags.title?.trim() || parsedFromName.title,
+        artist: tags.artist?.trim() || parsedFromName.artist,
+        duration,
+        source: 'local',
+        url: filePath ? toFileUrl(filePath) : URL.createObjectURL(file),
+        filePath,
+        artwork: tags.artwork || pickArtworkGradient(hue),
+        hue,
+        fileName: file.name,
+        isMissing: false,
+        createdAt: Date.now(),
+      })
+    }
 
     if (safeTracks.length === 0) {
-      set({ playbackNotice: 'Only mp3, wav and ogg files are supported.' })
+      if (supportedCount > 0 && window.electronWindow?.ingestAudioFiles) {
+        set({ playbackNotice: 'Could not resolve selected file paths. Reopen file picker and try again.' })
+      } else {
+        set({ playbackNotice: 'Only mp3, wav and ogg files are supported.' })
+      }
       return { added: 0, skipped }
     }
 
@@ -654,7 +687,8 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
       return {
         tracks: [...safeTracks, ...state.tracks],
         queueTrackIds: [...queue, ...safeTracks.map((track) => track.id)],
-        playbackNotice: `${safeTracks.length} track(s) added.`,
+        playbackNotice:
+          skipped > 0 ? `${safeTracks.length} track(s) added. ${skipped} skipped.` : `${safeTracks.length} track(s) added.`,
       }
     })
 

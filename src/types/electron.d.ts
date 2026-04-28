@@ -15,6 +15,7 @@ declare global {
       close: () => Promise<void>
       onMaximizedChanged: (callback: (value: boolean) => void) => () => void
       logError?: (message: string) => void
+      getPathForFile?: (file: File) => string
       ingestAudioFiles?: (paths: string[]) => Promise<IngestedAudioFile[]>
       loadConfigFile?: () => Promise<string | null>
       saveConfigFile?: (payload: string) => Promise<void>

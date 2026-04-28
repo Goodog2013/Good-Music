@@ -13,7 +13,7 @@ export const GlassCard = ({ className, icon, children }: GlassCardProps) => (
     initial={{ opacity: 0, y: 14 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.34, ease: 'easeOut' }}
-    className={cn('glass-panel', className)}
+    className={cn('glass-panel p-4', className)}
   >
     {icon ? <div className="mb-3 text-cyan-200/90">{icon}</div> : null}
     {children}

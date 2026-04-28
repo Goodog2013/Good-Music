@@ -1,4 +1,4 @@
-﻿import { contextBridge, ipcRenderer } from 'electron'
+﻿import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
 interface IngestedAudioFile {
   sourcePath: string
@@ -25,9 +25,17 @@ contextBridge.exposeInMainWorld('electronWindow', {
       ipcRenderer.removeListener('window:maximized-changed', handler)
     }
   },
+  getPathForFile: (file: File) => {
+    try {
+      return webUtils.getPathForFile(file)
+    } catch {
+      return ''
+    }
+  },
   ingestAudioFiles: (paths: string[]) => ipcRenderer.invoke('library:ingest-files', paths) as Promise<IngestedAudioFile[]>,
   loadConfigFile: () => ipcRenderer.invoke('library:load-config') as Promise<string | null>,
   saveConfigFile: (payload: string) => ipcRenderer.invoke('library:save-config', payload) as Promise<void>,
   importConfigFile: () => ipcRenderer.invoke('library:import-config') as Promise<string | null>,
   exportConfigFile: (payload: string) => ipcRenderer.invoke('library:export-config', payload) as Promise<boolean>,
 })
+
