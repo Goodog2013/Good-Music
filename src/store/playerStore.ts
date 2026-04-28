@@ -65,6 +65,61 @@ interface PlayerStore {
 
 const ensureUnique = (ids: string[]) => Array.from(new Set(ids))
 
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
+
+const safeNumber = (value: unknown, fallback = 0) => (typeof value === 'number' && Number.isFinite(value) ? value : fallback)
+
+const sanitizeTrack = (value: unknown): Track | null => {
+  if (!isRecord(value)) {
+    return null
+  }
+
+  const id = typeof value.id === 'string' ? value.id : ''
+  const title = typeof value.title === 'string' ? value.title : ''
+  const artist = typeof value.artist === 'string' ? value.artist : 'Unknown Artist'
+
+  if (!id || !title) {
+    return null
+  }
+
+  const source = value.source === 'local' || value.source === 'demo' ? value.source : 'demo'
+
+  return {
+    id,
+    title,
+    artist,
+    duration: safeNumber(value.duration),
+    url: typeof value.url === 'string' ? value.url : '',
+    source,
+    artwork: typeof value.artwork === 'string' ? value.artwork : pickArtworkGradient(safeNumber(value.hue, 220)),
+    hue: safeNumber(value.hue, 220),
+    createdAt: safeNumber(value.createdAt, Date.now()),
+    fileName: typeof value.fileName === 'string' ? value.fileName : undefined,
+    isMissing: Boolean(value.isMissing),
+  }
+}
+
+const sanitizePlaylist = (value: unknown): Playlist | null => {
+  if (!isRecord(value)) {
+    return null
+  }
+
+  const id = typeof value.id === 'string' ? value.id : ''
+  const name = typeof value.name === 'string' ? value.name : ''
+  if (!id || !name) {
+    return null
+  }
+
+  return {
+    id,
+    name,
+    description: typeof value.description === 'string' ? value.description : 'Custom playlist',
+    coverHue: safeNumber(value.coverHue, 260),
+    trackIds: Array.isArray(value.trackIds) ? value.trackIds.filter((item): item is string => typeof item === 'string') : [],
+    createdAt: safeNumber(value.createdAt, Date.now()),
+  }
+}
+
 const loadPersistedSnapshot = (): PersistedSnapshot | null => {
   if (typeof window === 'undefined') {
     return null
@@ -76,9 +131,46 @@ const loadPersistedSnapshot = (): PersistedSnapshot | null => {
   }
 
   try {
-    const parsed = JSON.parse(raw) as PersistedSnapshot
-    return parsed
+    const parsed: unknown = JSON.parse(raw)
+    if (!isRecord(parsed)) {
+      localStorage.removeItem(STORAGE_KEY)
+      return null
+    }
+
+    const tracks = Array.isArray(parsed.tracks)
+      ? parsed.tracks.map((track) => sanitizeTrack(track)).filter((track): track is Track => Boolean(track))
+      : []
+
+    const playlists = Array.isArray(parsed.playlists)
+      ? parsed.playlists
+          .map((playlist) => sanitizePlaylist(playlist))
+          .filter((playlist): playlist is Playlist => Boolean(playlist))
+      : []
+
+    const favoriteTrackIds = Array.isArray(parsed.favoriteTrackIds)
+      ? parsed.favoriteTrackIds.filter((trackId): trackId is string => typeof trackId === 'string')
+      : []
+
+    const activePlaylistId = typeof parsed.activePlaylistId === 'string' ? parsed.activePlaylistId : null
+
+    const parsedSettings = isRecord(parsed.settings) ? parsed.settings : {}
+    const settings: AppSettings = {
+      visualizerEnabled:
+        typeof parsedSettings.visualizerEnabled === 'boolean'
+          ? parsedSettings.visualizerEnabled
+          : defaultSettings.visualizerEnabled,
+      visualizerIntensity: clamp(safeNumber(parsedSettings.visualizerIntensity, defaultSettings.visualizerIntensity), 20, 100),
+    }
+
+    return {
+      tracks,
+      playlists,
+      favoriteTrackIds,
+      activePlaylistId,
+      settings,
+    }
   } catch {
+    localStorage.removeItem(STORAGE_KEY)
     return null
   }
 }
@@ -147,7 +239,23 @@ const resolveQueue = (state: Pick<PlayerStore, 'queueTrackIds' | 'tracks'>) => {
 
 const findTrackIndex = (queue: string[], currentTrackId: string | null) => queue.findIndex((trackId) => trackId === currentTrackId)
 
-const initialState = hydrateInitialState()
+const initialState = (() => {
+  try {
+    return hydrateInitialState()
+  } catch {
+    const demoTracks = getDemoTracks()
+    const demoPlaylists = getDemoPlaylists()
+    return {
+      tracks: demoTracks,
+      playlists: demoPlaylists,
+      favoriteTrackIds: [demoTracks[0]?.id].filter(Boolean) as string[],
+      activePlaylistId: demoPlaylists[0]?.id ?? null,
+      queueTrackIds: demoPlaylists[0]?.trackIds ?? demoTracks.map((track) => track.id),
+      currentTrackId: demoTracks[0]?.id ?? null,
+      settings: defaultSettings,
+    }
+  }
+})()
 
 export const usePlayerStore = create<PlayerStore>()(
   subscribeWithSelector((set, get) => ({

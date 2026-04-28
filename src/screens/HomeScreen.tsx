@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { AudioLines, Heart, Music2, PlayCircle, UploadCloud } from 'lucide-react'
 import { useMemo } from 'react'
+import { ErrorBoundary } from '../components/common/ErrorBoundary'
 import { GlassCard } from '../components/common/GlassCard'
 import { VisualizerCanvas } from '../components/visualizer/VisualizerCanvas'
 import { usePlayerStore } from '../store/playerStore'
@@ -20,6 +21,8 @@ export const HomeScreen = ({ onImport }: HomeScreenProps) => {
     toggleFavorite,
     activePlaylistId,
     playlists,
+    setVisualizerEnabled,
+    setPlaybackNotice,
   } = usePlayerStore((state) => ({
     tracks: state.tracks,
     searchQuery: state.searchQuery,
@@ -29,6 +32,8 @@ export const HomeScreen = ({ onImport }: HomeScreenProps) => {
     toggleFavorite: state.toggleFavorite,
     activePlaylistId: state.activePlaylistId,
     playlists: state.playlists,
+    setVisualizerEnabled: state.setVisualizerEnabled,
+    setPlaybackNotice: state.setPlaybackNotice,
   }))
 
   const filtered = useMemo(() => {
@@ -68,7 +73,23 @@ export const HomeScreen = ({ onImport }: HomeScreenProps) => {
       className="min-h-0 space-y-4"
     >
       <div className="grid gap-4 xl:grid-cols-[2.4fr_1fr]">
-        <VisualizerCanvas />
+        <ErrorBoundary
+          onError={() => {
+            setVisualizerEnabled(false)
+            setPlaybackNotice('3D visualizer temporarily disabled due to graphics issue.')
+          }}
+          fallback={
+            <GlassCard className="flex h-[360px] items-center justify-center p-6 text-center">
+              <div>
+                <p className="text-xs uppercase tracking-[0.24em] text-slate-300/75">3D Fallback</p>
+                <p className="mt-2 text-lg font-semibold text-white">GPU/WebGL error detected</p>
+                <p className="mt-1 text-sm text-slate-300/80">Visualizer was disabled to keep the player usable.</p>
+              </div>
+            </GlassCard>
+          }
+        >
+          <VisualizerCanvas />
+        </ErrorBoundary>
 
         <div className="space-y-4">
           <GlassCard>
