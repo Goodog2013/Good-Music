@@ -12,25 +12,14 @@ interface HomeScreenProps {
 }
 
 export const HomeScreen = ({ onImport }: HomeScreenProps) => {
-  const {
-    tracks,
-    searchQuery,
-    currentTrackId,
-    favoriteTrackIds,
-    playTrack,
-    toggleFavorite,
-    activePlaylistId,
-    playlists,
-  } = usePlayerStore((state) => ({
-    tracks: state.tracks,
-    searchQuery: state.searchQuery,
-    currentTrackId: state.currentTrackId,
-    favoriteTrackIds: state.favoriteTrackIds,
-    playTrack: state.playTrack,
-    toggleFavorite: state.toggleFavorite,
-    activePlaylistId: state.activePlaylistId,
-    playlists: state.playlists,
-  }))
+  const tracks = usePlayerStore((state) => state.tracks)
+  const searchQuery = usePlayerStore((state) => state.searchQuery)
+  const currentTrackId = usePlayerStore((state) => state.currentTrackId)
+  const favoriteTrackIds = usePlayerStore((state) => state.favoriteTrackIds)
+  const playTrack = usePlayerStore((state) => state.playTrack)
+  const toggleFavorite = usePlayerStore((state) => state.toggleFavorite)
+  const activePlaylistId = usePlayerStore((state) => state.activePlaylistId)
+  const playlists = usePlayerStore((state) => state.playlists)
 
   const filtered = useMemo(() => {
     const normalized = searchQuery.trim().toLowerCase()

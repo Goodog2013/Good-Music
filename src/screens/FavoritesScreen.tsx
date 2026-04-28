@@ -6,14 +6,12 @@ import { usePlayerStore } from '../store/playerStore'
 import { formatTime } from '../utils/time'
 
 export const FavoritesScreen = () => {
-  const { tracks, favoriteTrackIds, currentTrackId, playTrack, toggleFavorite, searchQuery } = usePlayerStore((state) => ({
-    tracks: state.tracks,
-    favoriteTrackIds: state.favoriteTrackIds,
-    currentTrackId: state.currentTrackId,
-    playTrack: state.playTrack,
-    toggleFavorite: state.toggleFavorite,
-    searchQuery: state.searchQuery,
-  }))
+  const tracks = usePlayerStore((state) => state.tracks)
+  const favoriteTrackIds = usePlayerStore((state) => state.favoriteTrackIds)
+  const currentTrackId = usePlayerStore((state) => state.currentTrackId)
+  const playTrack = usePlayerStore((state) => state.playTrack)
+  const toggleFavorite = usePlayerStore((state) => state.toggleFavorite)
+  const searchQuery = usePlayerStore((state) => state.searchQuery)
 
   const favorites = useMemo(() => {
     const normalized = searchQuery.trim().toLowerCase()

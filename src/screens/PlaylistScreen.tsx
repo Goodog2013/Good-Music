@@ -6,31 +6,17 @@ import { usePlayerStore } from '../store/playerStore'
 import { formatTime } from '../utils/time'
 
 export const PlaylistScreen = () => {
-  const {
-    tracks,
-    playlists,
-    activePlaylistId,
-    searchQuery,
-    currentTrackId,
-    selectPlaylist,
-    playTrack,
-    playPlaylist,
-    deletePlaylist,
-    addTrackToPlaylist,
-    removeTrackFromPlaylist,
-  } = usePlayerStore((state) => ({
-    tracks: state.tracks,
-    playlists: state.playlists,
-    activePlaylistId: state.activePlaylistId,
-    searchQuery: state.searchQuery,
-    currentTrackId: state.currentTrackId,
-    selectPlaylist: state.selectPlaylist,
-    playTrack: state.playTrack,
-    playPlaylist: state.playPlaylist,
-    deletePlaylist: state.deletePlaylist,
-    addTrackToPlaylist: state.addTrackToPlaylist,
-    removeTrackFromPlaylist: state.removeTrackFromPlaylist,
-  }))
+  const tracks = usePlayerStore((state) => state.tracks)
+  const playlists = usePlayerStore((state) => state.playlists)
+  const activePlaylistId = usePlayerStore((state) => state.activePlaylistId)
+  const searchQuery = usePlayerStore((state) => state.searchQuery)
+  const currentTrackId = usePlayerStore((state) => state.currentTrackId)
+  const selectPlaylist = usePlayerStore((state) => state.selectPlaylist)
+  const playTrack = usePlayerStore((state) => state.playTrack)
+  const playPlaylist = usePlayerStore((state) => state.playPlaylist)
+  const deletePlaylist = usePlayerStore((state) => state.deletePlaylist)
+  const addTrackToPlaylist = usePlayerStore((state) => state.addTrackToPlaylist)
+  const removeTrackFromPlaylist = usePlayerStore((state) => state.removeTrackFromPlaylist)
 
   const activePlaylist = playlists.find((playlist) => playlist.id === activePlaylistId) ?? null
 

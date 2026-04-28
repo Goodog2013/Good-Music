@@ -13,43 +13,23 @@ const RepeatIcon = ({ mode }: { mode: 'off' | 'all' | 'one' }) => {
 }
 
 export const PlayerBar = () => {
-  const {
-    tracks,
-    currentTrackId,
-    currentTime,
-    duration,
-    isPlaying,
-    volume,
-    shuffle,
-    repeatMode,
-    favoriteTrackIds,
-    togglePlayPause,
-    previousTrack,
-    nextTrack,
-    seekTo,
-    setVolume,
-    toggleShuffle,
-    cycleRepeatMode,
-    toggleFavorite,
-  } = usePlayerStore((state) => ({
-    tracks: state.tracks,
-    currentTrackId: state.currentTrackId,
-    currentTime: state.currentTime,
-    duration: state.duration,
-    isPlaying: state.isPlaying,
-    volume: state.volume,
-    shuffle: state.shuffle,
-    repeatMode: state.repeatMode,
-    favoriteTrackIds: state.favoriteTrackIds,
-    togglePlayPause: state.togglePlayPause,
-    previousTrack: state.previousTrack,
-    nextTrack: state.nextTrack,
-    seekTo: state.seekTo,
-    setVolume: state.setVolume,
-    toggleShuffle: state.toggleShuffle,
-    cycleRepeatMode: state.cycleRepeatMode,
-    toggleFavorite: state.toggleFavorite,
-  }))
+  const tracks = usePlayerStore((state) => state.tracks)
+  const currentTrackId = usePlayerStore((state) => state.currentTrackId)
+  const currentTime = usePlayerStore((state) => state.currentTime)
+  const duration = usePlayerStore((state) => state.duration)
+  const isPlaying = usePlayerStore((state) => state.isPlaying)
+  const volume = usePlayerStore((state) => state.volume)
+  const shuffle = usePlayerStore((state) => state.shuffle)
+  const repeatMode = usePlayerStore((state) => state.repeatMode)
+  const favoriteTrackIds = usePlayerStore((state) => state.favoriteTrackIds)
+  const togglePlayPause = usePlayerStore((state) => state.togglePlayPause)
+  const previousTrack = usePlayerStore((state) => state.previousTrack)
+  const nextTrack = usePlayerStore((state) => state.nextTrack)
+  const seekTo = usePlayerStore((state) => state.seekTo)
+  const setVolume = usePlayerStore((state) => state.setVolume)
+  const toggleShuffle = usePlayerStore((state) => state.toggleShuffle)
+  const cycleRepeatMode = usePlayerStore((state) => state.cycleRepeatMode)
+  const toggleFavorite = usePlayerStore((state) => state.toggleFavorite)
 
   const currentTrack = useMemo(() => tracks.find((track) => track.id === currentTrackId) ?? null, [currentTrackId, tracks])
 
