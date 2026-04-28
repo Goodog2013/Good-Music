@@ -222,6 +222,7 @@ const hydrateInitialState = () => {
     settings: {
       ...defaultSettings,
       ...persisted.settings,
+      visualizerEnabled: false,
     },
   }
 }

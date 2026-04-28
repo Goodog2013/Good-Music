@@ -21,8 +21,6 @@ export const HomeScreen = ({ onImport }: HomeScreenProps) => {
     toggleFavorite,
     activePlaylistId,
     playlists,
-    setVisualizerEnabled,
-    setPlaybackNotice,
   } = usePlayerStore((state) => ({
     tracks: state.tracks,
     searchQuery: state.searchQuery,
@@ -32,8 +30,6 @@ export const HomeScreen = ({ onImport }: HomeScreenProps) => {
     toggleFavorite: state.toggleFavorite,
     activePlaylistId: state.activePlaylistId,
     playlists: state.playlists,
-    setVisualizerEnabled: state.setVisualizerEnabled,
-    setPlaybackNotice: state.setPlaybackNotice,
   }))
 
   const filtered = useMemo(() => {
@@ -74,10 +70,6 @@ export const HomeScreen = ({ onImport }: HomeScreenProps) => {
     >
       <div className="grid gap-4 xl:grid-cols-[2.4fr_1fr]">
         <ErrorBoundary
-          onError={() => {
-            setVisualizerEnabled(false)
-            setPlaybackNotice('3D visualizer temporarily disabled due to graphics issue.')
-          }}
           fallback={
             <GlassCard className="flex h-[360px] items-center justify-center p-6 text-center">
               <div>

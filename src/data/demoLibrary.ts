@@ -93,7 +93,7 @@ export const getDemoPlaylists = (): Playlist[] => [
 ]
 
 export const defaultSettings: AppSettings = {
-  visualizerEnabled: true,
+  visualizerEnabled: false,
   visualizerIntensity: 72,
 }
 

@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { useMemo, useRef, type ChangeEvent } from 'react'
 import { ErrorBoundary } from '../components/common/ErrorBoundary'
 import { Sidebar } from '../components/layout/Sidebar'
@@ -98,40 +98,34 @@ export const App = () => {
             </div>
 
             <main className="min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-5 md:py-5">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={viewOrder.indexOf(activeView)}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.22, ease: 'easeOut' }}
-                >
-                  {viewContent}
-                </motion.div>
-              </AnimatePresence>
+              <motion.div
+                key={viewOrder.indexOf(activeView)}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.22, ease: 'easeOut' }}
+              >
+                {viewContent}
+              </motion.div>
             </main>
           </div>
 
           <PlayerBar />
 
-          <AnimatePresence>
-            {playbackNotice ? (
-              <motion.div
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className="absolute bottom-24 left-1/2 z-30 -translate-x-1/2"
+          {playbackNotice ? (
+            <motion.div
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="absolute bottom-24 left-1/2 z-30 -translate-x-1/2"
+            >
+              <button
+                type="button"
+                onClick={dismissPlaybackNotice}
+                className="glass-panel rounded-xl border-cyan-300/35 bg-night-900/80 px-4 py-2 text-sm text-cyan-100"
               >
-                <button
-                  type="button"
-                  onClick={dismissPlaybackNotice}
-                  className="glass-panel rounded-xl border-cyan-300/35 bg-night-900/80 px-4 py-2 text-sm text-cyan-100"
-                >
-                  {playbackNotice}
-                </button>
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
+                {playbackNotice}
+              </button>
+            </motion.div>
+          ) : null}
 
           <input
             ref={fileInputRef}
