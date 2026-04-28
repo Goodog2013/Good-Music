@@ -1,6 +1,7 @@
 ﻿import { motion } from 'framer-motion'
-import { AudioLines, Heart, PlayCircle, Plus, UploadCloud } from 'lucide-react'
+import { AudioLines, Heart, PlayCircle, UploadCloud } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { AddToPlaylistPopoverButton } from '../components/common/AddToPlaylistPopoverButton'
 import { ErrorBoundary } from '../components/common/ErrorBoundary'
 import { GlassCard } from '../components/common/GlassCard'
 import { VisualizerCanvas } from '../components/visualizer/VisualizerCanvas'
@@ -24,9 +25,6 @@ export const HomeScreen = ({ onImport }: HomeScreenProps) => {
   const toggleFavorite = usePlayerStore((state) => state.toggleFavorite)
   const activePlaylistId = usePlayerStore((state) => state.activePlaylistId)
   const playlists = usePlayerStore((state) => state.playlists)
-  const addTrackToPlaylist = usePlayerStore((state) => state.addTrackToPlaylist)
-  const setPlaybackNotice = usePlayerStore((state) => state.setPlaybackNotice)
-  const setActiveView = usePlayerStore((state) => state.setActiveView)
   const { t } = useI18n()
 
   const [page, setPage] = useState(1)
@@ -62,43 +60,6 @@ export const HomeScreen = ({ onImport }: HomeScreenProps) => {
   )
 
   const activePlaylist = playlists.find((playlist) => playlist.id === activePlaylistId)
-
-  const onAddToPlaylist = (trackId: string) => {
-    if (playlists.length === 0) {
-      setPlaybackNotice(t('noPlaylistToAdd'))
-      setActiveView('playlist')
-      return
-    }
-
-    let playlist = playlists.find((item) => item.id === activePlaylistId) ?? playlists[0]
-
-    if (playlists.length > 1) {
-      const menu = playlists.map((item, index) => `${index + 1}. ${item.name}`).join('\n')
-      const rawChoice = window.prompt(`${t('addToPlaylistHint')}:\n${menu}`)
-
-      if (!rawChoice) {
-        return
-      }
-
-      const byIndex = Number.parseInt(rawChoice, 10)
-      if (Number.isFinite(byIndex) && byIndex >= 1 && byIndex <= playlists.length) {
-        playlist = playlists[byIndex - 1]
-      } else {
-        const byName = playlists.find((item) => item.name.toLowerCase() === rawChoice.toLowerCase())
-        if (byName) {
-          playlist = byName
-        }
-      }
-    }
-
-    if (playlist.trackIds.includes(trackId)) {
-      setPlaybackNotice(`${t('alreadyInPlaylist')}: ${playlist.name}`)
-      return
-    }
-
-    addTrackToPlaylist(trackId, playlist.id)
-    setPlaybackNotice(`${t('addedToPlaylist')}: ${playlist.name}`)
-  }
 
   return (
     <motion.section
@@ -225,14 +186,7 @@ export const HomeScreen = ({ onImport }: HomeScreenProps) => {
                   <p className="text-xs text-slate-300/70">{formatTime(track.duration)}</p>
                   {track.isMissing ? <p className="text-[11px] text-amber-200/80">{t('reimport')}</p> : null}
 
-                  <button
-                    type="button"
-                    onClick={() => onAddToPlaylist(track.id)}
-                    title={t('addToPlaylistHint')}
-                    className="rounded-lg border border-white/15 px-2 py-1 text-xs text-slate-200 transition hover:border-cyan-300/45 hover:text-cyan-100"
-                  >
-                    <Plus size={14} />
-                  </button>
+                  <AddToPlaylistPopoverButton trackId={track.id} />
 
                   <button
                     type="button"

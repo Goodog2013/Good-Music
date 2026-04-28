@@ -118,17 +118,23 @@ const sanitizeTrack = (value: unknown): Track | null => {
     return null
   }
 
-  const source = value.source === 'local' || value.source === 'demo' ? value.source : 'demo'
+  const source = value.source === 'local' || value.source === 'demo' ? value.source : 'local'
   const filePath = typeof value.filePath === 'string' ? value.filePath : undefined
+  const url = typeof value.url === 'string' ? value.url : ''
+
+  // Legacy demo entries are dropped completely: library starts empty now.
+  if (source === 'demo' && !filePath) {
+    return null
+  }
 
   return {
     id,
     title,
     artist,
     duration: safeNumber(value.duration),
-    url: typeof value.url === 'string' ? value.url : '',
+    url,
     filePath,
-    source,
+    source: 'local',
     artwork: typeof value.artwork === 'string' ? value.artwork : pickArtworkGradient(safeNumber(value.hue, 220)),
     hue: safeNumber(value.hue, 220),
     createdAt: safeNumber(value.createdAt, Date.now()),
@@ -835,7 +841,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
       currentTime: 0,
       duration: 0,
       pendingSeek: null,
-      playbackNotice: 'Library reset to demo data.',
+      playbackNotice: 'Library cleared.',
     })
   },
 }))

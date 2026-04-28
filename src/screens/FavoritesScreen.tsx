@@ -1,6 +1,7 @@
 ﻿import { motion } from 'framer-motion'
-import { Heart, Plus } from 'lucide-react'
+import { Heart } from 'lucide-react'
 import { useMemo } from 'react'
+import { AddToPlaylistPopoverButton } from '../components/common/AddToPlaylistPopoverButton'
 import { GlassCard } from '../components/common/GlassCard'
 import { useI18n } from '../hooks/useI18n'
 import { usePlayerStore } from '../store/playerStore'
@@ -13,11 +14,6 @@ export const FavoritesScreen = () => {
   const currentTrackId = usePlayerStore((state) => state.currentTrackId)
   const playTrack = usePlayerStore((state) => state.playTrack)
   const toggleFavorite = usePlayerStore((state) => state.toggleFavorite)
-  const addTrackToPlaylist = usePlayerStore((state) => state.addTrackToPlaylist)
-  const activePlaylistId = usePlayerStore((state) => state.activePlaylistId)
-  const playlists = usePlayerStore((state) => state.playlists)
-  const setPlaybackNotice = usePlayerStore((state) => state.setPlaybackNotice)
-  const setActiveView = usePlayerStore((state) => state.setActiveView)
   const searchQuery = usePlayerStore((state) => state.searchQuery)
   const { t } = useI18n()
 
@@ -35,43 +31,6 @@ export const FavoritesScreen = () => {
         return track.title.toLowerCase().includes(normalized) || track.artist.toLowerCase().includes(normalized)
       })
   }, [favoriteTrackIds, searchQuery, tracks])
-
-  const onAddToPlaylist = (trackId: string) => {
-    if (playlists.length === 0) {
-      setPlaybackNotice(t('noPlaylistToAdd'))
-      setActiveView('playlist')
-      return
-    }
-
-    let playlist = playlists.find((item) => item.id === activePlaylistId) ?? playlists[0]
-
-    if (playlists.length > 1) {
-      const menu = playlists.map((item, index) => `${index + 1}. ${item.name}`).join('\n')
-      const rawChoice = window.prompt(`${t('addToPlaylistHint')}:\n${menu}`)
-
-      if (!rawChoice) {
-        return
-      }
-
-      const byIndex = Number.parseInt(rawChoice, 10)
-      if (Number.isFinite(byIndex) && byIndex >= 1 && byIndex <= playlists.length) {
-        playlist = playlists[byIndex - 1]
-      } else {
-        const byName = playlists.find((item) => item.name.toLowerCase() === rawChoice.toLowerCase())
-        if (byName) {
-          playlist = byName
-        }
-      }
-    }
-
-    if (playlist.trackIds.includes(trackId)) {
-      setPlaybackNotice(`${t('alreadyInPlaylist')}: ${playlist.name}`)
-      return
-    }
-
-    addTrackToPlaylist(trackId, playlist.id)
-    setPlaybackNotice(`${t('addedToPlaylist')}: ${playlist.name}`)
-  }
 
   return (
     <motion.section initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.34 }} className="space-y-4">
@@ -109,14 +68,7 @@ export const FavoritesScreen = () => {
                   </div>
                 </button>
                 <p className="text-xs text-slate-300/70">{formatTime(track.duration)}</p>
-                <button
-                  type="button"
-                  onClick={() => onAddToPlaylist(track.id)}
-                  title={t('addToPlaylistHint')}
-                  className="rounded-lg border border-white/15 px-2 py-1 text-slate-200 transition hover:border-cyan-300/45 hover:text-cyan-100"
-                >
-                  <Plus size={14} />
-                </button>
+                <AddToPlaylistPopoverButton trackId={track.id} className="rounded-lg border border-white/15 px-2 py-1 text-slate-200 transition hover:border-cyan-300/45 hover:text-cyan-100" />
                 <button
                   type="button"
                   onClick={() => playTrack(track.id, favorites.map((item) => item.id))}
